@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply min-h-screen overflow-x-hidden bg-transparent text-slate-800 antialiased;
+}
+
+@keyframes ambientGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.habitat-bg {
+  background: linear-gradient(140deg, #c7d2fe, #ddd6fe, #fae8ff, #c4b5fd);
+  background-size: 300% 300%;
+  animation: ambientGradient 16s ease infinite;
+}

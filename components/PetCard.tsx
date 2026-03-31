@@ -1,0 +1,578 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Home } from "lucide-react";
+import { ChooseEggScreen } from "@/components/ChooseEggScreen";
+import { CreatureStage } from "@/components/CreatureStage";
+import { GrowthJourney } from "@/components/GrowthJourney";
+import { MoodAura } from "@/components/MoodAura";
+import { Sidebar } from "@/components/Sidebar";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
+import { triggerSchoolPrideBurst } from "@/lib/confetti";
+import type { CareAction } from "@/lib/activitySubmenus";
+import { useInterval } from "@/hooks/useInterval";
+import { usePetEngine } from "@/hooks/usePetEngine";
+
+type StatKey = "hunger" | "energy" | "joy" | "hygiene";
+type FeedbackType = "feed" | "sleep" | "play" | "clean" | "pet";
+type HatchPhase = "idle" | "shake" | "flash";
+type AnticipationState = "idle" | "dragging" | "near";
+type ScreenFlashTone = "chromatic" | "cyan" | null;
+
+type Particle = {
+  id: number;
+  x: number;
+  y: number;
+  type: FeedbackType;
+};
+
+type BiaPulse = {
+  id: number;
+};
+
+const biaPulse = {
+  initial: { scale: 0.8, opacity: 0.6 },
+  animate: { scale: 2.5, opacity: 0 },
+  transition: { duration: 0.4, ease: "easeOut" }
+} as const;
+
+const statConfig: Array<{ key: StatKey; label: string; color: string }> = [
+  { key: "hunger", label: "Hunger", color: "bg-rose-400" },
+  { key: "energy", label: "Energy", color: "bg-sky-400" },
+  { key: "joy", label: "Joy", color: "bg-amber-400" },
+  { key: "hygiene", label: "Hygiene", color: "bg-emerald-400" }
+];
+
+export function PetCard() {
+  const onEvolution = useCallback(() => {
+    void triggerSchoolPrideBurst();
+  }, []);
+
+  const onXpMilestone = useCallback(() => {
+    void triggerSchoolPrideBurst();
+  }, []);
+
+  const { pet, isReady, needsEggChoice, currentMood, isSick, tickDecay, applyStatDelta, setStage, createPet, healPet } = usePetEngine({
+    onEvolution,
+    onXpMilestone
+  });
+
+  const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
+  const [currentScene, setCurrentScene] = useState<SceneState>("nursery");
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [pulses, setPulses] = useState<BiaPulse[]>([]);
+  const [petJumpKey, setPetJumpKey] = useState(0);
+  const [activeAction, setActiveAction] = useState<CareAction | null>(null);
+  const [anticipationState, setAnticipationState] = useState<AnticipationState>("idle");
+  const [flashedStat, setFlashedStat] = useState<StatKey | null>(null);
+  const [inputsLocked, setInputsLocked] = useState(false);
+  const [useDefaultBabyAsset, setUseDefaultBabyAsset] = useState(false);
+  const [screenFlashTone, setScreenFlashTone] = useState<ScreenFlashTone>(null);
+  const [healPulseKey, setHealPulseKey] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [viewport, setViewport] = useState({ width: 390, height: 844 });
+  const creatureRef = useRef<HTMLDivElement>(null);
+  const heartbeatContextRef = useRef<AudioContext | null>(null);
+  const heartbeatGainRef = useRef<GainNode | null>(null);
+  const heartbeatTimerRef = useRef<number | null>(null);
+
+  useInterval(tickDecay, 60_000);
+
+  useEffect(() => {
+    if (currentScene === "nursery") {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCurrentScene("nursery");
+    }, 5_000);
+
+    return () => clearTimeout(timer);
+  }, [currentScene]);
+
+  useEffect(() => {
+    const updateViewport = () => {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    };
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!hasStarted || !isSick) {
+      if (heartbeatTimerRef.current) {
+        window.clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+      if (heartbeatGainRef.current) {
+        heartbeatGainRef.current.gain.cancelScheduledValues(0);
+        heartbeatGainRef.current.gain.value = 0;
+      }
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) {
+      return;
+    }
+
+    if (!heartbeatContextRef.current) {
+      heartbeatContextRef.current = new AudioCtx();
+      heartbeatGainRef.current = heartbeatContextRef.current.createGain();
+      heartbeatGainRef.current.gain.value = 0;
+      heartbeatGainRef.current.connect(heartbeatContextRef.current.destination);
+    }
+
+    const ctx = heartbeatContextRef.current;
+    const gain = heartbeatGainRef.current;
+    if (!ctx || !gain) {
+      return;
+    }
+
+    void ctx.resume();
+
+    const playBeat = () => {
+      const now = ctx.currentTime;
+      [0, 0.28].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const beatGain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(offset === 0 ? 54 : 48, now + offset);
+        beatGain.gain.setValueAtTime(0, now + offset);
+        beatGain.gain.linearRampToValueAtTime(0.035, now + offset + 0.02);
+        beatGain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.22);
+        osc.connect(beatGain);
+        beatGain.connect(gain);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.24);
+      });
+    };
+
+    playBeat();
+    heartbeatTimerRef.current = window.setInterval(playBeat, 1900);
+
+    return () => {
+      if (heartbeatTimerRef.current) {
+        window.clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+    };
+  }, [hasStarted, isSick]);
+
+  const spawnParticle = (type: FeedbackType) => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    const x = Math.max(16, Math.min(viewport.width - 16, viewport.width / 2 + (Math.random() * 160 - 80)));
+    const y = viewport.height - 120;
+    setParticles((prev) => [...prev, { id, x, y, type }]);
+    setTimeout(() => {
+      setParticles((prev) => prev.filter((particle) => particle.id !== id));
+    }, 900);
+  };
+
+  const triggerBiaPulse = () => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setPulses((prev) => [...prev, { id }]);
+    window.setTimeout(() => {
+      setPulses((prev) => prev.filter((pulse) => pulse.id !== id));
+    }, 420);
+  };
+
+  const runPetInteraction = () => {
+    setPetJumpKey((prev) => prev + 1);
+    applyStatDelta({ joy: 3 }, 1);
+    spawnParticle("pet");
+    triggerBiaPulse();
+  };
+
+  const triggerPetJump = () => {
+    if (pet.stage === "egg") {
+      const nextBondXp = Math.min(100, pet.xp + 10);
+      applyStatDelta({}, 10);
+      if (nextBondXp >= 100) {
+        window.setTimeout(() => {
+          void executeHatch();
+        }, 120);
+      }
+      return;
+    }
+    runPetInteraction();
+  };
+
+  const isPointInCreature = (point: { x: number; y: number }) => {
+    const rect = creatureRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return false;
+    }
+
+    return point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+  };
+
+  const getCreatureDistance = (point: { x: number; y: number }) => {
+    const rect = creatureRef.current?.getBoundingClientRect();
+    if (!rect) {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    return Math.hypot(point.x - centerX, point.y - centerY);
+  };
+
+  const flashStat = (stat: StatKey) => {
+    setFlashedStat(stat);
+    window.setTimeout(() => {
+      setFlashedStat((current) => (current === stat ? null : current));
+    }, 650);
+  };
+
+  const currentEggAsset =
+    pet.xp < 25
+      ? "/assets/egg_stage_0.svg"
+      : pet.xp < 50
+        ? "/assets/egg_stage_1.svg"
+        : pet.xp < 75
+          ? "/assets/egg_stage_2.svg"
+          : "/assets/egg_stage_3.svg";
+
+  const eggShouldWobble = pet.stage === "egg" && pet.xp >= 75;
+
+  const executeHatch = async () => {
+    if (pet.stage !== "egg" || hatchPhase !== "idle" || inputsLocked) {
+      return;
+    }
+
+    setInputsLocked(true);
+    setHatchPhase("shake");
+    await new Promise((resolve) => setTimeout(resolve, 650));
+    setScreenFlashTone("chromatic");
+    setHatchPhase("flash");
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    setUseDefaultBabyAsset(true);
+    setStage("baby", 100, { silent: true });
+    await triggerSchoolPrideBurst();
+    setCurrentScene("nursery");
+    setTimeout(() => {
+      setHatchPhase("idle");
+      setScreenFlashTone(null);
+      setInputsLocked(false);
+    }, 600);
+  };
+
+  const handleHeal = async () => {
+    if (inputsLocked || !isSick) {
+      return;
+    }
+
+    setInputsLocked(true);
+    setScreenFlashTone("cyan");
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    await healPet();
+    setHealPulseKey((prev) => prev + 1);
+    triggerBiaPulse();
+    ["hunger", "energy", "joy", "hygiene"].forEach((stat) => flashStat(stat as StatKey));
+    spawnParticle("clean");
+    window.setTimeout(() => {
+      setScreenFlashTone(null);
+      setInputsLocked(false);
+      setActiveAction(null);
+    }, 650);
+  };
+
+  const beginExperience = () => {
+    setIsStarting(true);
+    window.setTimeout(() => {
+      setHasStarted(true);
+      setIsStarting(false);
+    }, 700);
+  };
+
+  const chooseEgg = (eggType: "pink" | "blue" | "gold") => {
+    void createPet(eggType);
+  };
+
+  const runActivity = (action: FeedbackType) => {
+    if (action === "feed") {
+      applyStatDelta({ hunger: 16, joy: 2 }, isSick ? 0 : 8);
+      setCurrentScene("feed");
+      flashStat("hunger");
+    }
+
+    if (action === "sleep") {
+      applyStatDelta({ energy: 18, hunger: -4 }, 8);
+      setCurrentScene("sleep");
+      flashStat("energy");
+    }
+
+    if (action === "play") {
+      applyStatDelta({ joy: 18, energy: -4, hunger: -2 }, isSick ? 0 : 8);
+      setCurrentScene("play");
+      flashStat("joy");
+    }
+
+    if (action === "clean") {
+      applyStatDelta({ hygiene: 20, joy: 4 }, 8);
+      setCurrentScene("clean");
+      flashStat("hygiene");
+    }
+    spawnParticle(action);
+    triggerBiaPulse();
+  };
+
+  const onDropPet = (point: { x: number; y: number }) => {
+    if (inputsLocked) {
+      return;
+    }
+    const hitCreature = isPointInCreature(point);
+    setAnticipationState("idle");
+    if (!hitCreature) {
+      return;
+    }
+
+    if (pet.stage === "egg") {
+      const nextBondXp = Math.min(100, pet.xp + 10);
+      applyStatDelta({}, 10);
+      if (nextBondXp >= 100) {
+        window.setTimeout(() => {
+          void executeHatch();
+        }, 120);
+      }
+      return;
+    }
+    runPetInteraction();
+  };
+
+  const onSubDrop = (action: CareAction, subId: string, point: { x: number; y: number }) => {
+    if (inputsLocked) {
+      return;
+    }
+    const hitCreature = isPointInCreature(point);
+    setAnticipationState("idle");
+    if (!hitCreature) {
+      return;
+    }
+
+    if (pet.stage === "egg") {
+      return;
+    }
+
+    if (subId === "star-elixir") {
+      void handleHeal();
+      return;
+    }
+
+    void triggerSchoolPrideBurst();
+    runActivity(action);
+    setPetJumpKey((prev) => prev + 1);
+    window.setTimeout(() => {
+      setActiveAction(null);
+    }, 350);
+  };
+
+  const onDragPoint = (point: { x: number; y: number }) => {
+    if (inputsLocked) {
+      return;
+    }
+    const distance = getCreatureDistance(point);
+    setAnticipationState(distance <= 50 ? "near" : "dragging");
+  };
+
+  const showFlash = screenFlashTone !== null || hatchPhase === "flash";
+
+  const actionFeedbackIcon = {
+    feed: "💖",
+    sleep: "⭐",
+    play: "✨",
+    clean: "🫧",
+    pet: "💕"
+  } as const;
+
+  useEffect(() => {
+    if (pet.stage !== "egg" && hatchPhase !== "idle") {
+      const timer = setTimeout(() => setHatchPhase("idle"), 450);
+      return () => clearTimeout(timer);
+    }
+  }, [pet.stage, hatchPhase]);
+
+  return (
+    <motion.section
+      className="relative min-h-screen text-slate-800"
+      initial={false}
+      animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
+      transition={{ duration: 0.7, ease: "easeInOut" }}
+    >
+      <SceneBackground currentScene={currentScene} mood={currentMood} isSick={isSick} />
+
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-3 pt-3">
+        <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
+          <div className="mb-1 flex items-center justify-center">
+            <h1 className="text-[13px] font-bold leading-tight tracking-tight text-slate-800">
+              Bia Core
+            </h1>
+          </div>
+
+          <GrowthJourney stage={pet.stage} bond={pet.xp} />
+
+          <div className="mt-3">
+            <MoodAura mood={currentMood} />
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            {statConfig.map((stat) => (
+              <div key={stat.key} className="rounded-xl bg-white/72 px-2 py-1.5 shadow-sm">
+                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold leading-none text-slate-600">
+                  <span>{stat.label}</span>
+                  <span className="tabular-nums">{pet[stat.key]}%</span>
+                </div>
+                <div
+                  className={`h-2 rounded-full bg-slate-100/90 transition-all duration-300 ${
+                    flashedStat === stat.key ? "ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.95)]" : ""
+                  }`}
+                >
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${stat.color}`}
+                    style={{ width: `${pet[stat.key]}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentScene}
+          initial={{ opacity: 0.88 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0.88 }}
+          transition={{ duration: 0.85, ease: "easeInOut" }}
+          className="pointer-events-none fixed inset-x-0 top-[51%] z-10 flex -translate-y-1/2 items-center justify-center"
+        >
+          <div ref={creatureRef} className="pointer-events-auto h-[280px] w-[280px]">
+            <CreatureStage
+              stage={pet.stage}
+              hatchPhase={hatchPhase}
+              hunger={pet.hunger}
+              joy={pet.joy}
+              mood={currentMood}
+              onPet={triggerPetJump}
+              petJumpKey={petJumpKey}
+              isExcited={anticipationState !== "idle"}
+              isNearDrop={anticipationState === "near"}
+              eggAsset={currentEggAsset}
+              eggShouldWobble={eggShouldWobble}
+              useDefaultBabyAsset={useDefaultBabyAsset}
+              isSick={isSick}
+              healPulseKey={healPulseKey}
+            />
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      <Sidebar
+        stage={pet.stage}
+        activeAction={activeAction}
+        isSick={isSick}
+        onDragPoint={onDragPoint}
+        onDropPet={onDropPet}
+        onSubDrop={onSubDrop}
+        onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
+        onCloseMenu={() => setActiveAction(null)}
+        disabled={inputsLocked}
+      />
+
+      <AnimatePresence>
+        {showFlash && (
+          screenFlashTone === "cyan" ? (
+            <motion.div
+              className="pointer-events-none fixed inset-0 z-50 bg-cyan-300"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            />
+          ) : (
+            <motion.div
+              className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35 }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-white/65 mix-blend-screen"
+                animate={{ opacity: [0.15, 0.65, 0.2] }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute inset-0 bg-red-400/25 mix-blend-screen"
+                animate={{ x: [-8, 10, -4], opacity: [0.2, 0.42, 0.18] }}
+                transition={{ duration: 0.32, ease: "easeInOut" }}
+              />
+              <motion.div
+                className="absolute inset-0 bg-cyan-400/25 mix-blend-screen"
+                animate={{ x: [10, -8, 4], opacity: [0.2, 0.42, 0.18] }}
+                transition={{ duration: 0.32, ease: "easeInOut" }}
+              />
+            </motion.div>
+          )
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pulses.map((pulse) => (
+          <motion.div
+            key={pulse.id}
+            className="pointer-events-none fixed left-1/2 top-[51%] z-20 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-200/75"
+            initial={biaPulse.initial}
+            animate={biaPulse.animate}
+            exit={{ opacity: 0 }}
+            transition={biaPulse.transition}
+          />
+        ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {particles.map((particle) => (
+          <motion.div
+            key={particle.id}
+            className="pointer-events-none fixed z-40 text-2xl"
+            initial={{ x: particle.x, y: particle.y, opacity: 0.95, scale: 1 }}
+            animate={{ x: viewport.width / 2, y: viewport.height / 2, opacity: 0, scale: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {actionFeedbackIcon[particle.type]}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-3 pb-3">
+        <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
+          {pet.stage === "egg"
+            ? "Build Bia Sync to 100 to hatch. The egg destabilizes as it gets closer."
+            : "Hover activities — drag a treat or toy onto your companion. Scene returns to Nursery."}
+          <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
+            <Home size={12} className="opacity-80" />
+            <span className="font-semibold">{sceneDisplayName(currentScene)}</span>
+          </div>
+        </div>
+      </footer>
+      <AnimatePresence>
+        {!hasStarted && isReady && <WelcomeScreen onStart={beginExperience} isLeaving={isStarting} />}
+      </AnimatePresence>
+
+      <AnimatePresence>{hasStarted && needsEggChoice && <ChooseEggScreen onChoose={chooseEgg} />}</AnimatePresence>
+    </motion.section>
+  );
+}
