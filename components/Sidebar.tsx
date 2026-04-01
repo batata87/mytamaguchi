@@ -65,7 +65,7 @@ function DraggablePetTool({
 }) {
   const base =
     variant === "hatch"
-      ? "flex min-h-[5.5rem] w-[5.75rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-200/90 to-orange-100/85 text-amber-950 shadow-[0_0_20px_rgba(251,191,36,0.45)] ring-2 ring-amber-300/60"
+      ? "flex min-h-[4.75rem] w-[4.75rem] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-200/90 to-orange-100/85 text-amber-950 shadow-[0_0_20px_rgba(251,191,36,0.45)] ring-2 ring-amber-300/60 sm:min-h-[5.5rem] sm:w-[5.75rem]"
       : variant === "muted"
         ? "flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-xl border border-white/20 bg-white/10 text-slate-400 opacity-75"
         : "flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-2xl border border-white/25 bg-white/15 text-slate-700 shadow-sm backdrop-blur-sm";
@@ -148,7 +148,7 @@ function ActivityWithSubmenu({
         }`}
       >
         {actionImageMap[action] ? (
-          <Image src={actionImageMap[action]} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+          <Image src={actionImageMap[action]} alt="" width={28} height={28} unoptimized className="h-7 w-7 object-contain" />
         ) : (
           icon
         )}
@@ -185,7 +185,7 @@ function ActivityWithSubmenu({
                 className="flex touch-none items-center gap-2 rounded-lg border border-white/20 bg-white/15 px-2 py-1.5 text-left text-[10px] font-semibold text-white hover:bg-white/25"
               >
                 {subItemImageMap[sub.id] ? (
-                  <Image src={subItemImageMap[sub.id]} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
+                  <Image src={subItemImageMap[sub.id]} alt="" width={28} height={28} unoptimized className="h-7 w-7 shrink-0 object-contain" />
                 ) : (
                   <span className="text-base" aria-hidden>
                     {sub.emoji}
@@ -222,21 +222,42 @@ export function Sidebar({
     >
       <div className="flex w-full max-w-[min(100%,520px)] flex-col gap-2 sm:w-auto sm:max-w-none sm:gap-3">
       {isEgg && (
-        <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 p-2.5 shadow-lg shadow-amber-900/10 backdrop-blur-sm">
-          <p className="mb-1.5 text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
-            Start here
-          </p>
-          <DraggablePetTool
-            label="Pet"
-            icon={<Hand size={22} className="text-amber-900" />}
-            variant="hatch"
-            onDragPoint={onDragPoint}
-            onDropPet={onDropPet}
-          />
-          <p className="mt-2 text-center text-[9px] font-medium leading-snug text-amber-950/90">
-            Drag <strong>Pet</strong> onto the egg
-          </p>
-        </div>
+        <>
+          <div className="hidden rounded-2xl border border-amber-400/50 bg-amber-100/20 p-2.5 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:block">
+            <p className="mb-1.5 text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
+              Start here
+            </p>
+            <DraggablePetTool
+              label="Pet"
+              icon={<Hand size={22} className="text-amber-900" />}
+              variant="hatch"
+              onDragPoint={onDragPoint}
+              onDropPet={onDropPet}
+            />
+            <p className="mt-2 text-center text-[9px] font-medium leading-snug text-amber-950/90">
+              Drag <strong>Pet</strong> onto the egg
+            </p>
+          </div>
+          <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 px-3 py-2 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
+                  Start here
+                </p>
+                <p className="mt-0.5 text-[9px] font-medium leading-snug text-amber-950/90">
+                  Drag <strong>Pet</strong> onto the egg
+                </p>
+              </div>
+              <DraggablePetTool
+                label="Pet"
+                icon={<Hand size={20} className="text-amber-900" />}
+                variant="hatch"
+                onDragPoint={onDragPoint}
+                onDropPet={onDropPet}
+              />
+            </div>
+          </div>
+        </>
       )}
 
       <div className="flex flex-row items-end justify-center gap-2 overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">

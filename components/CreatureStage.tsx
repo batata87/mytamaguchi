@@ -52,6 +52,7 @@ function EggStateArt({ src }: { src: string }) {
       width={260}
       height={260}
       className="h-60 w-60 object-contain"
+      unoptimized
       priority
     />
   );
@@ -65,6 +66,7 @@ function DefaultBabyArt() {
       width={260}
       height={260}
       className="h-52 w-52 object-contain"
+      unoptimized
       priority
     />
   );
@@ -75,7 +77,7 @@ function CreatureSprite({ stage }: { stage: Exclude<PetStage, "egg"> }) {
     stage === "baby" ? "/assets/stage3_baby.png" : stage === "teen" ? "/assets/stage4_medium.png" : "/assets/stage5_adult.png";
   const sizeClass = stage === "adult" ? "h-56 w-72" : "h-52 w-52";
 
-  return <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain`} priority />;
+  return <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain`} unoptimized priority />;
 }
 
 export function CreatureStage({

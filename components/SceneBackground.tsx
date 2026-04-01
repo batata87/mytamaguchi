@@ -146,27 +146,27 @@ export function SceneBackground({
       </AnimatePresence>
       {currentScene === "nursery" && mood !== "distressed" && (
         <div className="absolute inset-0">
-          <Image src="/assets/nursery_background.png" alt="" fill priority className="object-cover opacity-95" />
+          <Image src="/assets/idle.png" alt="" fill priority unoptimized className="object-cover opacity-95" />
         </div>
       )}
       {currentScene === "feed" && (
         <div className="absolute inset-0">
-          <Image src="/assets/nursery_background.png" alt="" fill className="object-cover opacity-60" />
+          <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-60" />
         </div>
       )}
       {currentScene === "sleep" && (
         <div className="absolute inset-0">
-          <Image src="/assets/bed_background.png" alt="" fill className="object-cover opacity-70" />
+          <Image src="/assets/bed_background.png" alt="" fill unoptimized className="object-cover opacity-70" />
         </div>
       )}
       {currentScene === "play" && (
         <div className="absolute inset-0">
-          <Image src="/assets/nursery_background.png" alt="" fill className="object-cover opacity-72" />
+          <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
         </div>
       )}
       {currentScene === "clean" && (
         <div className="absolute inset-0">
-          <Image src="/assets/bath_background.png" alt="" fill className="object-cover opacity-72" />
+          <Image src="/assets/bath_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
         </div>
       )}
       {currentScene === "nursery" && mood !== "distressed" && (

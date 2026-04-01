@@ -456,9 +456,9 @@ export function PetCard() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0.88 }}
           transition={{ duration: 0.85, ease: "easeInOut" }}
-          className="pointer-events-none fixed inset-x-0 top-[49%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+          className="pointer-events-none fixed inset-x-0 top-[56%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
         >
-          <div ref={creatureRef} className="pointer-events-auto h-[220px] w-[220px] sm:h-[280px] sm:w-[280px]">
+          <div ref={creatureRef} className="pointer-events-auto h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]">
             <CreatureStage
               stage={pet.stage}
               hatchPhase={hatchPhase}
