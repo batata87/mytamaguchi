@@ -1,11 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
 import { Bed, Hand, Pizza, ShowerHead, Circle, X } from "lucide-react";
 import type { PetStage } from "@/lib/game";
-import { Sprite, type SpritePartName } from "@/components/Sprite";
 import { ACTIVITY_SUBMENUS, STAR_ELIXIR_ITEM, type CareAction } from "@/lib/activitySubmenus";
 
 export type DragAction = "feed" | "sleep" | "play" | "clean" | "pet";
@@ -31,23 +31,23 @@ const careActions: Array<{ action: CareAction; label: string; icon: ReactNode }>
   { action: "clean", label: "Clean", icon: <ShowerHead size={18} /> }
 ];
 
-const actionSpriteMap: Partial<Record<CareAction, SpritePartName>> = {
-  feed: "berries",
-  sleep: "cloudBed",
-  play: "meteorBall",
-  clean: "bath"
+const actionImageMap: Partial<Record<CareAction, string>> = {
+  feed: "/assets/berries.png",
+  sleep: "/assets/cloudbed.png",
+  play: "/assets/ball.png",
+  clean: "/assets/clean_menu_icon.png"
 };
 
-const subItemSpriteMap: Record<string, SpritePartName> = {
-  berries: "berries",
-  mooncake: "mooncake",
-  soup: "soup",
-  catnap: "cloudBed",
-  starlight: "crystalPod",
-  dream: "hamperBed",
-  orbit: "meteorBall",
-  comet: "zeroGyYoYo",
-  starhop: "sparkStick"
+const subItemImageMap: Record<string, string> = {
+  berries: "/assets/berries.png",
+  mooncake: "/assets/cookie.png",
+  soup: "/assets/soup.png",
+  catnap: "/assets/cloudbed.png",
+  starlight: "/assets/cloudbed.png",
+  dream: "/assets/cloudbed.png",
+  orbit: "/assets/ball.png",
+  comet: "/assets/ball.png",
+  starhop: "/assets/yoyo.png"
 };
 
 function DraggablePetTool({
@@ -73,12 +73,14 @@ function DraggablePetTool({
   return (
     <motion.button
       drag
+      dragListener
       dragMomentum={false}
       dragSnapToOrigin
       whileDrag={{ scale: 1.08 }}
+      dragTransition={{ power: 0, timeConstant: 120 }}
       onDrag={(_, info: PanInfo) => onDragPoint(info.point)}
       onDragEnd={(_, info: PanInfo) => onDropPet(info.point)}
-      className={base}
+      className={`${base} touch-none`}
       aria-label={label}
     >
       {icon}
@@ -137,7 +139,7 @@ function ActivityWithSubmenu({
       <button
         type="button"
         onClick={() => onToggleAction(action)}
-        className={`flex h-16 w-16 flex-col items-center justify-center gap-1 rounded-2xl border text-slate-700 shadow-sm backdrop-blur-sm transition ${
+        className={`flex h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center gap-1 rounded-2xl border text-slate-700 shadow-sm backdrop-blur-sm transition ${
           muted
             ? "border-white/15 bg-white/10 opacity-70"
             : open
@@ -145,8 +147,8 @@ function ActivityWithSubmenu({
               : "border-white/30 bg-white/15 hover:bg-white/25"
         }`}
       >
-        {actionSpriteMap[action] ? (
-          <Sprite partName={actionSpriteMap[action]} className="h-7 w-7 bg-contain bg-center" />
+        {actionImageMap[action] ? (
+          <Image src={actionImageMap[action]} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
         ) : (
           icon
         )}
@@ -160,7 +162,7 @@ function ActivityWithSubmenu({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-full top-0 z-[60] mr-2 flex min-w-[148px] flex-col gap-1 rounded-xl border border-white/35 bg-slate-900/55 p-2 shadow-xl backdrop-blur-md"
+            className="absolute bottom-full right-0 z-[60] mb-2 flex min-w-[148px] flex-col gap-1 rounded-xl border border-white/35 bg-slate-900/75 p-2 shadow-xl backdrop-blur-md sm:bottom-auto sm:right-full sm:top-0 sm:mb-0 sm:mr-2"
           >
             <div className="mb-1 flex items-center justify-between px-1">
               <p className="text-[8px] font-bold uppercase tracking-wide text-white/70">Choose & drag</p>
@@ -172,16 +174,18 @@ function ActivityWithSubmenu({
               <motion.button
                 key={sub.id}
                 drag
+                dragListener
                 dragMomentum={false}
                 dragSnapToOrigin
                 whileDrag={{ scale: 1.05, zIndex: 70 }}
+                dragTransition={{ power: 0, timeConstant: 120 }}
                 onDrag={(_, info: PanInfo) => onDragPoint(info.point)}
                 onDragEnd={(_, info: PanInfo) => onSubDrop(action, sub.id, info.point)}
                 type="button"
-                className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/15 px-2 py-1.5 text-left text-[10px] font-semibold text-white hover:bg-white/25"
+                className="flex touch-none items-center gap-2 rounded-lg border border-white/20 bg-white/15 px-2 py-1.5 text-left text-[10px] font-semibold text-white hover:bg-white/25"
               >
-                {subItemSpriteMap[sub.id] ? (
-                  <Sprite partName={subItemSpriteMap[sub.id]} className="h-7 w-7 shrink-0 bg-contain bg-center" />
+                {subItemImageMap[sub.id] ? (
+                  <Image src={subItemImageMap[sub.id]} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
                 ) : (
                   <span className="text-base" aria-hidden>
                     {sub.emoji}
@@ -212,10 +216,11 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed right-2 top-1/2 z-40 flex max-w-[6.5rem] -translate-y-1/2 flex-col gap-3 ${
+      className={`fixed inset-x-0 bottom-2 z-40 flex items-end justify-center px-2 sm:inset-x-auto sm:right-2 sm:top-1/2 sm:bottom-auto sm:block sm:max-w-[6.5rem] sm:-translate-y-1/2 sm:px-0 ${
         disabled ? "pointer-events-none opacity-60" : ""
       }`}
     >
+      <div className="flex w-full max-w-[min(100%,520px)] flex-col gap-2 sm:w-auto sm:max-w-none sm:gap-3">
       {isEgg && (
         <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 p-2.5 shadow-lg shadow-amber-900/10 backdrop-blur-sm">
           <p className="mb-1.5 text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
@@ -234,7 +239,7 @@ export function Sidebar({
         </div>
       )}
 
-      <div className="flex flex-col gap-2 rounded-2xl border border-white/20 bg-white/6 p-2 shadow-sm backdrop-blur-sm">
+      <div className="flex flex-row items-end justify-center gap-2 overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
         <p className="px-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-slate-700">
           {isEgg ? "After hatch" : "Activities"}
         </p>
@@ -262,6 +267,7 @@ export function Sidebar({
             onDropPet={onDropPet}
           />
         )}
+      </div>
       </div>
     </aside>
   );

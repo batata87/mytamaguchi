@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import type { PetMood, PetStage } from "@/lib/game";
-import { PetSprite } from "@/components/PetSprite";
 
 type CreatureStageProps = {
   stage: PetStage;
@@ -61,7 +60,7 @@ function EggStateArt({ src }: { src: string }) {
 function DefaultBabyArt() {
   return (
     <Image
-      src="/default_pet.png"
+      src="/assets/stage3_baby.png"
       alt="Default baby pet"
       width={260}
       height={260}
@@ -72,10 +71,11 @@ function DefaultBabyArt() {
 }
 
 function CreatureSprite({ stage }: { stage: Exclude<PetStage, "egg"> }) {
-  const spritePart = stage === "baby" ? "baby" : stage === "teen" ? "juvenile" : "adult";
+  const src =
+    stage === "baby" ? "/assets/stage3_baby.png" : stage === "teen" ? "/assets/stage4_medium.png" : "/assets/stage5_adult.png";
   const sizeClass = stage === "adult" ? "h-56 w-72" : "h-52 w-52";
 
-  return <PetSprite partName={spritePart} className={sizeClass} />;
+  return <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain`} priority />;
 }
 
 export function CreatureStage({
@@ -107,7 +107,7 @@ export function CreatureStage({
         : undefined;
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-4">
+    <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-2 sm:px-4">
       <motion.div
         className="absolute top-[58%] h-44 w-56 -translate-y-1/2 rounded-full bg-white/18 blur-2xl"
         animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
@@ -116,24 +116,13 @@ export function CreatureStage({
       <motion.button
         onClick={onPet}
         className="relative -mt-2 flex items-center justify-center"
-        animate={
-          mood === "distressed"
-            ? { x: [0, -3, 3, -2, 2, 0], y: [0, 2, -2, 1, -1, 0] }
-            : undefined
-        }
-        transition={
-          mood === "distressed"
-            ? { duration: 0.35, repeat: Infinity, ease: "linear" }
-            : undefined
-        }
         style={{
           filter: creatureFilter
         }}
       >
         <motion.div
-          key={`${petJumpKey}-${healPulseKey}`}
-          initial={{ y: 0 }}
-          animate={healPulseKey ? { scale: [1, 1.12, 0.98, 1], y: [0, -4, 0] } : petJumpKey ? { y: [-20, 0] } : { y: 0 }}
+          initial={false}
+          animate={healPulseKey ? { scale: [1, 1.12, 0.98, 1], y: [0, -4, 0] } : petJumpKey ? { y: [0, -20, 0] } : { y: 0 }}
           transition={{ duration: healPulseKey ? 0.9 : 0.35, ease: "easeOut" }}
           className="flex items-center justify-center"
         >
@@ -151,11 +140,9 @@ export function CreatureStage({
             </motion.div>
           ) : (
             <motion.div
-              key={stage}
               variants={breatheVariants}
               transition={{ duration: breatheDuration, ease: "easeInOut", repeat: Infinity }}
-              initial={{ scale: 0.5, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
+              initial={false}
               className={`relative ${mood === "blissful" ? "drop-shadow-[0_0_22px_rgba(251,191,36,0.75)]" : ""}`}
               animate={isExcited ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] } : "idle"}
             >

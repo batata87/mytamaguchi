@@ -10,6 +10,16 @@ body {
   @apply min-h-screen overflow-x-hidden bg-transparent text-slate-800 antialiased;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @keyframes ambientGradient {
   0% {
     background-position: 0% 50%;

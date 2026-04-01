@@ -7,9 +7,10 @@ import { InfoButton } from "@/components/InfoButton";
 type WelcomeScreenProps = {
   onStart: () => void;
   isLeaving: boolean;
+  isReady?: boolean;
 };
 
-export function WelcomeScreen({ onStart, isLeaving }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStart, isLeaving, isReady = true }: WelcomeScreenProps) {
   const [showInfo, setShowInfo] = useState(false);
 
   return (
@@ -42,12 +43,13 @@ export function WelcomeScreen({ onStart, isLeaving }: WelcomeScreenProps) {
         </p>
         <motion.button
           onClick={onStart}
+          disabled={!isReady}
           className="mt-10 rounded-full border border-white/20 bg-white px-8 py-4 text-base font-bold tracking-[0.08em] text-slate-950 shadow-[0_0_30px_rgba(255,255,255,0.22)]"
           animate={{ scale: [1, 1.05, 1], boxShadow: ["0 0 20px rgba(255,255,255,0.22)", "0 0 34px rgba(255,255,255,0.5)", "0 0 20px rgba(255,255,255,0.22)"] }}
           transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
           whileTap={{ scale: 0.97 }}
         >
-          BEGIN
+          {isReady ? "BEGIN" : "LOADING"}
         </motion.button>
       </div>
     </motion.div>

@@ -237,12 +237,12 @@ export function PetCard() {
 
   const currentEggAsset =
     pet.xp < 25
-      ? "/assets/egg_stage_0.svg"
+      ? "/assets/stage0.png"
       : pet.xp < 50
-        ? "/assets/egg_stage_1.svg"
+        ? "/assets/stage1.png"
         : pet.xp < 75
-          ? "/assets/egg_stage_2.svg"
-          : "/assets/egg_stage_3.svg";
+          ? "/assets/stage2.png"
+          : "/assets/stage2.png";
 
   const eggShouldWobble = pet.stage === "egg" && pet.xp >= 75;
 
@@ -405,14 +405,14 @@ export function PetCard() {
 
   return (
     <motion.section
-      className="relative min-h-screen text-slate-800"
+      className={`relative min-h-screen text-slate-800 ${!isReady && !hasStarted ? "opacity-0" : ""}`}
       initial={false}
       animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
       transition={{ duration: 0.7, ease: "easeInOut" }}
     >
       <SceneBackground currentScene={currentScene} mood={currentMood} isSick={isSick} />
 
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-3 pt-3">
+      <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2.5 sm:px-3 sm:pt-3">
         <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
           <div className="mb-1 flex items-center justify-center">
             <h1 className="text-[13px] font-bold leading-tight tracking-tight text-slate-800">
@@ -456,9 +456,9 @@ export function PetCard() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0.88 }}
           transition={{ duration: 0.85, ease: "easeInOut" }}
-          className="pointer-events-none fixed inset-x-0 top-[51%] z-10 flex -translate-y-1/2 items-center justify-center"
+          className="pointer-events-none fixed inset-x-0 top-[49%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
         >
-          <div ref={creatureRef} className="pointer-events-auto h-[280px] w-[280px]">
+          <div ref={creatureRef} className="pointer-events-auto h-[220px] w-[220px] sm:h-[280px] sm:w-[280px]">
             <CreatureStage
               stage={pet.stage}
               hatchPhase={hatchPhase}
@@ -557,7 +557,7 @@ export function PetCard() {
         ))}
       </AnimatePresence>
 
-      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-3 pb-3">
+      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[5.5rem] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
             ? "Build Bia Sync to 100 to hatch. The egg destabilizes as it gets closer."
@@ -569,7 +569,7 @@ export function PetCard() {
         </div>
       </footer>
       <AnimatePresence>
-        {!hasStarted && isReady && <WelcomeScreen onStart={beginExperience} isLeaving={isStarting} />}
+        {!hasStarted && <WelcomeScreen onStart={beginExperience} isLeaving={isStarting} isReady={isReady} />}
       </AnimatePresence>
 
       <AnimatePresence>{hasStarted && needsEggChoice && <ChooseEggScreen onChoose={chooseEgg} />}</AnimatePresence>

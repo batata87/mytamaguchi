@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import type { PetMood } from "@/lib/game";
-import { Sprite } from "@/components/Sprite";
 
 /** Cinematic habitat scenes — background cross-fades on activity. */
 export type SceneState = "nursery" | "feed" | "sleep" | "play" | "clean";
@@ -145,31 +145,28 @@ export function SceneBackground({
         />
       </AnimatePresence>
       {currentScene === "nursery" && mood !== "distressed" && (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div
-            className="h-full w-full bg-cover bg-center opacity-95"
-            style={{ backgroundImage: 'url("/assets/idle.png")' }}
-          />
+        <div className="absolute inset-0">
+          <Image src="/assets/nursery_background.png" alt="" fill priority className="object-cover opacity-95" />
         </div>
       )}
       {currentScene === "feed" && (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <Sprite partName="nursery" className="h-[44vh] w-full max-w-5xl bg-contain bg-center opacity-45" />
+        <div className="absolute inset-0">
+          <Image src="/assets/nursery_background.png" alt="" fill className="object-cover opacity-60" />
         </div>
       )}
       {currentScene === "sleep" && (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <Sprite partName="sleepRoom" className="h-[44vh] w-full max-w-5xl bg-contain bg-center opacity-65" />
+        <div className="absolute inset-0">
+          <Image src="/assets/bed_background.png" alt="" fill className="object-cover opacity-70" />
         </div>
       )}
       {currentScene === "play" && (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <Sprite partName="garden" className="h-[44vh] w-full max-w-5xl bg-contain bg-center opacity-65" />
+        <div className="absolute inset-0">
+          <Image src="/assets/nursery_background.png" alt="" fill className="object-cover opacity-72" />
         </div>
       )}
       {currentScene === "clean" && (
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <Sprite partName="bath" className="h-[44vh] w-full max-w-5xl bg-contain bg-center opacity-65" />
+        <div className="absolute inset-0">
+          <Image src="/assets/bath_background.png" alt="" fill className="object-cover opacity-72" />
         </div>
       )}
       {currentScene === "nursery" && mood !== "distressed" && (

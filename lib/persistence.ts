@@ -98,7 +98,12 @@ export async function saveGameState(pet: PetState): Promise<void> {
   const payload = petToRow(pet);
   const { error } = await supabase.from("pets").upsert(payload, { onConflict: "player_id" });
   if (error) {
-    console.error("Failed to save pet state", error);
+    console.error("Failed to save pet state", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
   }
 }
 
@@ -115,7 +120,12 @@ export async function loadGameState(): Promise<{ pet: PetState; lastUpdatedAt: s
     .maybeSingle<DbPetRow>();
 
   if (error) {
-    console.error("Failed to load pet state", error);
+    console.error("Failed to load pet state", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint
+    });
     return null;
   }
 
