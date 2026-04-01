@@ -4,6 +4,7 @@ export type EggType = "pink" | "blue" | "gold";
 export type PetMood = "happy" | "distressed" | "blissful" | "sick";
 
 export type PetState = {
+  name: string;
   hunger: number;
   energy: number;
   joy: number;
@@ -15,6 +16,7 @@ export type PetState = {
 };
 
 export const initialPetState: PetState = {
+  name: "Bia",
   hunger: 100,
   energy: 100,
   joy: 100,

@@ -20,6 +20,7 @@ type FeedbackType = "feed" | "sleep" | "play" | "clean" | "pet";
 type HatchPhase = "idle" | "shake" | "flash";
 type AnticipationState = "idle" | "dragging" | "near";
 type ScreenFlashTone = "chromatic" | "cyan" | null;
+type ActivityReaction = "feed" | "sleep" | "play" | "clean" | null;
 
 type Particle = {
   id: number;
@@ -54,7 +55,7 @@ export function PetCard() {
     void triggerSchoolPrideBurst();
   }, []);
 
-  const { pet, isReady, needsEggChoice, currentMood, isSick, tickDecay, applyStatDelta, setStage, createPet, healPet } = usePetEngine({
+  const { pet, isReady, needsEggChoice, currentMood, isSick, tickDecay, applyStatDelta, setStage, createPet, healPet, renamePet } = usePetEngine({
     onEvolution,
     onXpMilestone
   });
@@ -74,10 +75,15 @@ export function PetCard() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [activityReaction, setActivityReaction] = useState<ActivityReaction>(null);
   const creatureRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const heartbeatContextRef = useRef<AudioContext | null>(null);
   const heartbeatGainRef = useRef<GainNode | null>(null);
   const heartbeatTimerRef = useRef<number | null>(null);
+  const activityReactionTimerRef = useRef<number | null>(null);
 
   useInterval(tickDecay, 60_000);
 
@@ -101,6 +107,20 @@ export function PetCard() {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  useEffect(() => {
+    if (!isRenaming) {
+      setDraftName(pet.name);
+    }
+  }, [pet.name, isRenaming]);
+
+  useEffect(() => {
+    if (!isRenaming) {
+      return;
+    }
+    renameInputRef.current?.focus();
+    renameInputRef.current?.select();
+  }, [isRenaming]);
 
   useEffect(() => {
     if (!hasStarted || !isSick) {
@@ -185,6 +205,17 @@ export function PetCard() {
     window.setTimeout(() => {
       setPulses((prev) => prev.filter((pulse) => pulse.id !== id));
     }, 420);
+  };
+
+  const triggerActivityReaction = (action: ActivityReaction) => {
+    if (activityReactionTimerRef.current) {
+      window.clearTimeout(activityReactionTimerRef.current);
+    }
+    setActivityReaction(action);
+    activityReactionTimerRef.current = window.setTimeout(() => {
+      setActivityReaction(null);
+      activityReactionTimerRef.current = null;
+    }, 950);
   };
 
   const runPetInteraction = () => {
@@ -300,6 +331,15 @@ export function PetCard() {
     void createPet(eggType);
   };
 
+  const commitRename = async () => {
+    const trimmed = draftName.trim().slice(0, 24);
+    setIsRenaming(false);
+    setDraftName(trimmed || pet.name);
+    if (trimmed && trimmed !== pet.name) {
+      await renamePet(trimmed);
+    }
+  };
+
   const runActivity = (action: FeedbackType) => {
     if (action === "feed") {
       applyStatDelta({ hunger: 16, joy: 2 }, isSick ? 0 : 8);
@@ -326,6 +366,9 @@ export function PetCard() {
     }
     spawnParticle(action);
     triggerBiaPulse();
+    if (action !== "pet") {
+      triggerActivityReaction(action);
+    }
   };
 
   const onDropPet = (point: { x: number; y: number }) => {
@@ -415,9 +458,35 @@ export function PetCard() {
       <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2.5 sm:px-3 sm:pt-3">
         <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
           <div className="mb-1 flex items-center justify-center">
-            <h1 className="text-[13px] font-bold leading-tight tracking-tight text-slate-800">
-              Bia Core
-            </h1>
+            {isRenaming ? (
+              <input
+                ref={renameInputRef}
+                value={draftName}
+                onChange={(event) => setDraftName(event.target.value.slice(0, 24))}
+                onBlur={() => void commitRename()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void commitRename();
+                  }
+                  if (event.key === "Escape") {
+                    setIsRenaming(false);
+                    setDraftName(pet.name);
+                  }
+                }}
+                aria-label="Rename creature"
+                className="w-40 rounded-full border border-white/50 bg-white/75 px-3 py-1 text-center text-[13px] font-bold leading-tight tracking-tight text-slate-800 outline-none ring-0"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsRenaming(true)}
+                className="rounded-full px-3 py-1 text-[13px] font-bold leading-tight tracking-tight text-slate-800 transition hover:bg-white/25"
+                aria-label="Rename creature"
+              >
+                {pet.name}
+              </button>
+            )}
           </div>
 
           <GrowthJourney stage={pet.stage} bond={pet.xp} />
@@ -451,19 +520,17 @@ export function PetCard() {
 
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentScene}
+          key="creature-stage"
           initial={{ opacity: 0.88 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0.88 }}
-          transition={{ duration: 0.85, ease: "easeInOut" }}
-          className="pointer-events-none fixed inset-x-0 top-[56%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+          transition={{ duration: 0.45, ease: "easeOut" }}
+          className="pointer-events-none fixed inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
         >
-          <div ref={creatureRef} className="pointer-events-auto h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]">
+          <div ref={creatureRef} className="pointer-events-auto h-[170px] w-[170px] sm:h-[280px] sm:w-[280px]">
             <CreatureStage
               stage={pet.stage}
               hatchPhase={hatchPhase}
-              hunger={pet.hunger}
-              joy={pet.joy}
               mood={currentMood}
               onPet={triggerPetJump}
               petJumpKey={petJumpKey}
@@ -474,6 +541,7 @@ export function PetCard() {
               useDefaultBabyAsset={useDefaultBabyAsset}
               isSick={isSick}
               healPulseKey={healPulseKey}
+              activityReaction={activityReaction}
             />
           </div>
         </motion.div>
@@ -557,10 +625,10 @@ export function PetCard() {
         ))}
       </AnimatePresence>
 
-      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[5.5rem] sm:px-3 sm:pb-3">
+      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
-            ? "Build Bia Sync to 100 to hatch. The egg destabilizes as it gets closer."
+            ? "Tap the egg or drag Pet onto it to build Bia Sync. The shell destabilizes as it gets closer to hatching."
             : "Hover activities — drag a treat or toy onto your companion. Scene returns to Nursery."}
           <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
             <Home size={12} className="opacity-80" />

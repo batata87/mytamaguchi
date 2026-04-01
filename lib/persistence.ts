@@ -5,8 +5,6 @@ import { clampStat, deriveMood } from "@/lib/petMath";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const PLAYER_ID_KEY = "bia-player-id-v1";
-const PET_NAME = "Bia";
-
 type DbPetRow = {
   player_id: string;
   name: string;
@@ -44,6 +42,7 @@ function getPlayerId(): string {
 
 function rowToPet(row: DbPetRow): PetState {
   const pet: PetState = {
+    name: row.name,
     hunger: row.hunger,
     energy: row.energy,
     joy: row.joy,
@@ -60,7 +59,7 @@ function rowToPet(row: DbPetRow): PetState {
 function petToRow(pet: PetState): DbPetRow {
   return {
     player_id: getPlayerId(),
-    name: PET_NAME,
+    name: pet.name,
     egg_type: pet.eggType,
     hunger: pet.hunger,
     energy: pet.energy,

@@ -1,10 +1,23 @@
 "use client";
 
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, type PanInfo } from "framer-motion";
-import { Bed, Hand, Pizza, ShowerHead, Circle, X } from "lucide-react";
+import {
+  BrushCleaning,
+  Cherry,
+  CloudMoon,
+  Hand,
+  Sparkle,
+  Sparkles,
+  Stars,
+  MoonStar,
+  CircleDot,
+  Orbit,
+  SprayCan,
+  FlaskRound,
+  X
+} from "lucide-react";
 import type { PetStage } from "@/lib/game";
 import { ACTIVITY_SUBMENUS, STAR_ELIXIR_ITEM, type CareAction } from "@/lib/activitySubmenus";
 
@@ -25,29 +38,26 @@ type SidebarProps = {
 };
 
 const careActions: Array<{ action: CareAction; label: string; icon: ReactNode }> = [
-  { action: "feed", label: "Feed", icon: <Pizza size={18} /> },
-  { action: "sleep", label: "Sleep", icon: <Bed size={18} /> },
-  { action: "play", label: "Play", icon: <Circle size={18} className="fill-amber-400/30" /> },
-  { action: "clean", label: "Clean", icon: <ShowerHead size={18} /> }
+  { action: "feed", label: "Feed", icon: <Cherry size={24} strokeWidth={1.9} /> },
+  { action: "sleep", label: "Sleep", icon: <CloudMoon size={24} strokeWidth={1.9} /> },
+  { action: "play", label: "Play", icon: <Sparkles size={24} strokeWidth={1.9} /> },
+  { action: "clean", label: "Clean", icon: <BrushCleaning size={24} strokeWidth={1.9} /> }
 ];
 
-const actionImageMap: Partial<Record<CareAction, string>> = {
-  feed: "/assets/berries.png",
-  sleep: "/assets/cloudbed.png",
-  play: "/assets/ball.png",
-  clean: "/assets/clean_menu_icon.png"
-};
-
-const subItemImageMap: Record<string, string> = {
-  berries: "/assets/berries.png",
-  mooncake: "/assets/cookie.png",
-  soup: "/assets/soup.png",
-  catnap: "/assets/cloudbed.png",
-  starlight: "/assets/cloudbed.png",
-  dream: "/assets/cloudbed.png",
-  orbit: "/assets/ball.png",
-  comet: "/assets/ball.png",
-  starhop: "/assets/yoyo.png"
+const subItemIconMap: Record<string, ReactNode> = {
+  berries: <Cherry size={18} strokeWidth={1.9} />,
+  mooncake: <CircleDot size={18} strokeWidth={1.9} />,
+  soup: <Stars size={18} strokeWidth={1.9} />,
+  catnap: <CloudMoon size={18} strokeWidth={1.9} />,
+  starlight: <Stars size={18} strokeWidth={1.9} />,
+  dream: <MoonStar size={18} strokeWidth={1.9} />,
+  orbit: <Orbit size={18} strokeWidth={1.9} />,
+  comet: <Sparkles size={18} strokeWidth={1.9} />,
+  starhop: <Sparkle size={18} strokeWidth={1.9} />,
+  mist: <SprayCan size={18} strokeWidth={1.9} />,
+  sparkle: <Sparkles size={18} strokeWidth={1.9} />,
+  nebula: <BrushCleaning size={18} strokeWidth={1.9} />,
+  "star-elixir": <FlaskRound size={18} strokeWidth={1.9} />
 };
 
 function DraggablePetTool({
@@ -139,19 +149,15 @@ function ActivityWithSubmenu({
       <button
         type="button"
         onClick={() => onToggleAction(action)}
-        className={`flex h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center gap-1 rounded-2xl border text-slate-700 shadow-sm backdrop-blur-sm transition ${
+        className={`flex h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center gap-1 rounded-2xl border shadow-sm backdrop-blur-sm transition ${
           muted
-            ? "border-white/15 bg-white/10 opacity-70"
+            ? "border-white/15 bg-white/10 text-slate-500 opacity-70"
             : open
-              ? "border-violet-300 bg-white/30 ring-2 ring-violet-300/70"
-              : "border-white/30 bg-white/15 hover:bg-white/25"
+              ? "border-white/70 bg-white/22 text-white ring-2 ring-white/45"
+              : "border-white/35 bg-white/12 text-white/92 hover:bg-white/20 hover:text-white"
         }`}
       >
-        {actionImageMap[action] ? (
-          <Image src={actionImageMap[action]} alt="" width={28} height={28} unoptimized className="h-7 w-7 object-contain" />
-        ) : (
-          icon
-        )}
+        <span>{icon}</span>
         <span className="text-[10px] font-semibold">{label}</span>
       </button>
 
@@ -184,13 +190,9 @@ function ActivityWithSubmenu({
                 type="button"
                 className="flex touch-none items-center gap-2 rounded-lg border border-white/20 bg-white/15 px-2 py-1.5 text-left text-[10px] font-semibold text-white hover:bg-white/25"
               >
-                {subItemImageMap[sub.id] ? (
-                  <Image src={subItemImageMap[sub.id]} alt="" width={28} height={28} unoptimized className="h-7 w-7 shrink-0 object-contain" />
-                ) : (
-                  <span className="text-base" aria-hidden>
-                    {sub.emoji}
-                  </span>
-                )}
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/6 text-white/95">
+                  {subItemIconMap[sub.id] ?? <Sparkles size={18} strokeWidth={1.9} />}
+                </span>
                 <span className="leading-tight">{sub.label}</span>
               </motion.button>
             ))}
@@ -216,7 +218,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed inset-x-0 bottom-2 z-40 flex items-end justify-center px-2 sm:inset-x-auto sm:right-2 sm:top-1/2 sm:bottom-auto sm:block sm:max-w-[6.5rem] sm:-translate-y-1/2 sm:px-0 ${
+      className={`fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.5rem)] z-40 flex items-end justify-center px-2 sm:inset-x-auto sm:right-2 sm:top-1/2 sm:bottom-auto sm:block sm:max-w-[6.5rem] sm:-translate-y-1/2 sm:px-0 ${
         disabled ? "pointer-events-none opacity-60" : ""
       }`}
     >
@@ -225,7 +227,7 @@ export function Sidebar({
         <>
           <div className="hidden rounded-2xl border border-amber-400/50 bg-amber-100/20 p-2.5 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:block">
             <p className="mb-1.5 text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
-              Start here
+              Hatch the egg
             </p>
             <DraggablePetTool
               label="Pet"
@@ -235,17 +237,17 @@ export function Sidebar({
               onDropPet={onDropPet}
             />
             <p className="mt-2 text-center text-[9px] font-medium leading-snug text-amber-950/90">
-              Drag <strong>Pet</strong> onto the egg
+              Tap the egg or drag <strong>Pet</strong> onto it
             </p>
           </div>
           <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 px-3 py-2 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:hidden">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
-                  Start here
+                  Hatch the egg
                 </p>
                 <p className="mt-0.5 text-[9px] font-medium leading-snug text-amber-950/90">
-                  Drag <strong>Pet</strong> onto the egg
+                  Tap the egg or drag <strong>Pet</strong> onto it
                 </p>
               </div>
               <DraggablePetTool
@@ -282,7 +284,7 @@ export function Sidebar({
         {!isEgg && (
           <DraggablePetTool
             label="Pet"
-            icon={<Hand size={18} />}
+            icon={<Sparkle size={18} />}
             variant="default"
             onDragPoint={onDragPoint}
             onDropPet={onDropPet}

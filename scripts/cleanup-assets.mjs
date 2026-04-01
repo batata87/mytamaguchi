@@ -16,7 +16,8 @@ const gameplayAssets = [
   "cookie.png",
   "soup.png",
   "ball.png",
-  "yoyo.png"
+  "yoyo.png",
+  "clean_menu_icon.png"
 ];
 
 function shouldRemovePixel(r, g, b, a) {

@@ -19,6 +19,7 @@ type StoredPayload = {
 
 function normalizePet(partial: PetState): PetState {
   const base: PetState = {
+    name: partial.name ?? "Bia",
     hunger: partial.hunger ?? 100,
     energy: partial.energy ?? 100,
     joy: partial.joy ?? 100,
@@ -239,6 +240,28 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     await saveGameState(next);
   }, []);
 
+  const renamePet = useCallback(async (name: string) => {
+    const trimmed = name.trim().slice(0, 24);
+    if (!trimmed) {
+      return;
+    }
+
+    let renamed: PetState | null = null;
+    setPet((prev) => {
+      const next = withSyncedStatus({
+        ...prev,
+        name: trimmed
+      });
+      renamed = next;
+      saveStored(next, Date.now());
+      return next;
+    });
+
+    if (renamed) {
+      await saveGameState(renamed);
+    }
+  }, []);
+
   const healPet = useCallback(async () => {
     let healed: PetState | null = null;
 
@@ -272,6 +295,7 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     applyStatDelta,
     setStage,
     createPet,
-    healPet
+    healPet,
+    renamePet
   };
 }

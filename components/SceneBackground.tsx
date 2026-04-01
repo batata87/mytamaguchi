@@ -15,8 +15,6 @@ const sceneGradients: Record<SceneState, string> = {
   clean: "from-[#ccfbf1] via-[#e0f2fe] to-[#f0fdfa]"
 };
 
-const distressedNursery = "from-slate-800 via-indigo-950 to-slate-900";
-
 function SceneParticles({ scene }: { scene: SceneState }) {
   if (scene === "sleep") {
     return (
@@ -103,10 +101,7 @@ function MoodParticles({ mood }: { mood: PetMood }) {
   return null;
 }
 
-function resolveSceneClass(scene: SceneState, mood: PetMood): string {
-  if (scene === "nursery" && mood === "distressed") {
-    return distressedNursery;
-  }
+function resolveSceneClass(scene: SceneState): string {
   return sceneGradients[scene];
 }
 
@@ -130,50 +125,112 @@ export function SceneBackground({
   mood: PetMood;
   isSick?: boolean;
 }) {
-  const gradientKey = `${currentScene}-${mood === "distressed" && currentScene === "nursery" ? "d" : "n"}`;
+  const gradientKey = currentScene;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={gradientKey}
-          className={`absolute inset-0 bg-gradient-to-b ${resolveSceneClass(currentScene, mood)}`}
+          className={`absolute inset-0 bg-gradient-to-b ${resolveSceneClass(currentScene)}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1, ease: "easeInOut" }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         />
       </AnimatePresence>
-      {currentScene === "nursery" && mood !== "distressed" && (
-        <div className="absolute inset-0">
-          <Image src="/assets/idle.png" alt="" fill priority unoptimized className="object-cover opacity-95" />
-        </div>
-      )}
-      {currentScene === "feed" && (
-        <div className="absolute inset-0">
-          <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-60" />
-        </div>
-      )}
-      {currentScene === "sleep" && (
-        <div className="absolute inset-0">
-          <Image src="/assets/bed_background.png" alt="" fill unoptimized className="object-cover opacity-70" />
-        </div>
-      )}
-      {currentScene === "play" && (
-        <div className="absolute inset-0">
-          <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
-        </div>
-      )}
-      {currentScene === "clean" && (
-        <div className="absolute inset-0">
-          <Image src="/assets/bath_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
-        </div>
-      )}
-      {currentScene === "nursery" && mood !== "distressed" && (
+      <AnimatePresence mode="wait">
+        {currentScene === "nursery" && (
+          <motion.div
+            key="scene-nursery"
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
+            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image src="/assets/idle.png" alt="" fill priority unoptimized className="object-cover opacity-95" />
+          </motion.div>
+        )}
+        {currentScene === "feed" && (
+          <motion.div
+            key="scene-feed"
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.03, filter: "blur(12px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_34%),linear-gradient(180deg,rgba(255,240,245,0.72),rgba(236,233,255,0.78)_36%,rgba(220,228,255,0.82))]" />
+            <motion.div
+              className="absolute inset-x-0 top-[6%] mx-auto w-full max-w-6xl px-3 sm:top-[7%] sm:px-6"
+              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.985 }}
+              transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="overflow-hidden rounded-[2rem] border border-white/30 bg-white/12 shadow-[0_24px_70px_rgba(55,45,95,0.18)]">
+                <Image
+                  src="/assets/kitchen.png"
+                  alt=""
+                  width={1600}
+                  height={820}
+                  unoptimized
+                  className="h-auto w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+        {currentScene === "sleep" && (
+          <motion.div
+            key="scene-sleep"
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
+            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image src="/assets/bed_background.png" alt="" fill unoptimized className="object-cover opacity-70" />
+          </motion.div>
+        )}
+        {currentScene === "play" && (
+          <motion.div
+            key="scene-play"
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
+            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
+          </motion.div>
+        )}
+        {currentScene === "clean" && (
+          <motion.div
+            key="scene-clean"
+            className="absolute inset-0"
+            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
+            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Image src="/assets/bath_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {currentScene === "nursery" && (
         <motion.div
           className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-fuchsia-300/20"
           animate={{ opacity: [0.4, 0.65, 0.4] }}
           transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        />
+      )}
+      {currentScene === "nursery" && mood === "distressed" && (
+        <motion.div
+          className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(49,46,129,0.16),transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.18),rgba(49,46,129,0.26))]"
+          animate={{ opacity: [0.55, 0.72, 0.55] }}
+          transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
         />
       )}
       {isSick && (

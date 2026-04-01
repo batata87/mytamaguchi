@@ -2,13 +2,14 @@
 
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
+import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
 import type { PetMood, PetStage } from "@/lib/game";
+
+type ActivityReaction = "feed" | "sleep" | "play" | "clean" | null;
 
 type CreatureStageProps = {
   stage: PetStage;
   hatchPhase: "idle" | "shake" | "flash";
-  hunger: number;
-  joy: number;
   mood: PetMood;
   onPet: () => void;
   petJumpKey: number;
@@ -19,6 +20,7 @@ type CreatureStageProps = {
   useDefaultBabyAsset: boolean;
   isSick: boolean;
   healPulseKey: number;
+  activityReaction: ActivityReaction;
 };
 
 function breatheVariantsForMood(mood: PetMood): Variants {
@@ -80,11 +82,110 @@ function CreatureSprite({ stage }: { stage: Exclude<PetStage, "egg"> }) {
   return <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain`} unoptimized priority />;
 }
 
+function SickCreatureArt() {
+  return (
+    <Image
+      src="/assets/sick.png"
+      alt="Sick creature"
+      width={320}
+      height={320}
+      className="h-56 w-56 object-contain"
+      unoptimized
+      priority
+    />
+  );
+}
+
+function ReactionOverlay({ activityReaction }: { activityReaction: ActivityReaction }) {
+  if (!activityReaction) {
+    return null;
+  }
+
+  if (activityReaction === "feed") {
+    return (
+      <motion.div
+        className="pointer-events-none absolute left-1/2 top-[34%] z-20 ml-6"
+        initial={{ opacity: 0, scale: 0.7, x: 10, y: 8 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.7, 1.05, 1, 0.92], x: [10, 0, -6, -10], y: [8, 0, 2, 4] }}
+        transition={{ duration: 0.85, ease: "easeOut" }}
+      >
+        <div className="rounded-full border border-white/40 bg-white/28 p-2 text-rose-50 shadow-[0_0_18px_rgba(255,255,255,0.25)] backdrop-blur-sm">
+          <Cherry size={18} strokeWidth={2} />
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (activityReaction === "sleep") {
+    return (
+      <motion.div
+        className="pointer-events-none absolute left-1/2 top-[18%] z-20 ml-8 text-indigo-50"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: [0, 1, 1, 0], y: [10, -6, -18, -30] }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+      >
+        <div className="mb-1 flex justify-center">
+          <CloudMoon size={18} strokeWidth={2} />
+        </div>
+        <div className="text-xs font-bold tracking-[0.18em]">Zz</div>
+      </motion.div>
+    );
+  }
+
+  if (activityReaction === "play") {
+    return (
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-amber-50"
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: [0, 1, 1, 0], scale: [0.85, 1.1, 1] }}
+        transition={{ duration: 0.9, ease: "easeOut" }}
+      >
+        <motion.div
+          className="absolute -left-2 top-10"
+          animate={{ x: [0, 12, 0], y: [0, -12, 0], rotate: [0, 20, 0] }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+        >
+          <Sparkles size={18} strokeWidth={2} />
+        </motion.div>
+        <motion.div
+          className="absolute -right-1 top-14"
+          animate={{ x: [0, -10, 0], y: [0, 8, 0], rotate: [0, -18, 0] }}
+          transition={{ duration: 0.75, ease: "easeInOut" }}
+        >
+          <Sparkles size={20} strokeWidth={2} />
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center text-cyan-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 1, 1, 0] }}
+      transition={{ duration: 0.95, ease: "easeOut" }}
+    >
+      {Array.from({ length: 4 }).map((_, idx) => (
+        <motion.div
+          key={idx}
+          className="absolute"
+          style={{
+            left: `${28 + idx * 14}%`,
+            top: `${24 + (idx % 2) * 18}%`
+          }}
+          animate={{ y: [8, -8, -18], opacity: [0, 1, 0], scale: [0.7, 1, 0.85] }}
+          transition={{ duration: 0.9, ease: "easeOut", delay: idx * 0.08 }}
+        >
+          <BrushCleaning size={16} strokeWidth={2} />
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+}
+
 export function CreatureStage({
   stage,
   hatchPhase,
-  hunger,
-  joy,
   mood,
   onPet,
   petJumpKey,
@@ -94,19 +195,16 @@ export function CreatureStage({
   eggShouldWobble,
   useDefaultBabyAsset,
   isSick,
-  healPulseKey
+  healPulseKey,
+  activityReaction
 }: CreatureStageProps) {
   const breatheVariants = breatheVariantsForMood(mood);
   const breatheDuration = isSick ? 4.8 : mood === "blissful" ? 1.4 : 2.4;
-  const lowFeel = hunger < 20 || joy < 20;
-
   const creatureFilter = isSick
     ? "grayscale(0.8) contrast(1.2)"
-    : lowFeel
-      ? "grayscale(1)"
-      : mood === "distressed"
-        ? "saturate(0.5)"
-        : undefined;
+    : mood === "distressed"
+      ? "saturate(0.75) brightness(0.96)"
+      : undefined;
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-2 sm:px-4">
@@ -148,8 +246,9 @@ export function CreatureStage({
               className={`relative ${mood === "blissful" ? "drop-shadow-[0_0_22px_rgba(251,191,36,0.75)]" : ""}`}
               animate={isExcited ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] } : "idle"}
             >
+              <ReactionOverlay activityReaction={activityReaction} />
               <motion.div animate={isNearDrop ? { scale: [1, 1.08, 1.1] } : { scale: 1 }}>
-                {stage === "baby" && useDefaultBabyAsset ? <DefaultBabyArt /> : <CreatureSprite stage={stage} />}
+                {isSick ? <SickCreatureArt /> : stage === "baby" && useDefaultBabyAsset ? <DefaultBabyArt /> : <CreatureSprite stage={stage} />}
               </motion.div>
             </motion.div>
           )}
