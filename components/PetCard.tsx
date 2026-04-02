@@ -109,6 +109,7 @@ export function PetCard() {
   const heartbeatGainRef = useRef<GainNode | null>(null);
   const heartbeatTimerRef = useRef<number | null>(null);
   const activityReactionTimerRef = useRef<number | null>(null);
+  const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
 
   useInterval(tickDecay, 60_000);
 
@@ -259,6 +260,39 @@ export function PetCard() {
       gain.gain.setValueAtTime(0, ctx.currentTime);
     };
   }, [hasStarted, isSick]);
+
+  const ensureAmbientMusic = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!ambientAudioRef.current) {
+      const audio = new Audio("/assets/Paper_Lantern_Orbits.mp3");
+      audio.loop = true;
+      audio.preload = "auto";
+      audio.volume = 0.35;
+      ambientAudioRef.current = audio;
+    }
+  }, []);
+
+  useEffect(() => {
+    ensureAmbientMusic();
+    const audio = ambientAudioRef.current;
+    if (!audio) {
+      return;
+    }
+
+    if (!hasStarted || isSick) {
+      audio.pause();
+      return;
+    }
+
+    const maybePromise = audio.play();
+    if (maybePromise && typeof maybePromise.catch === "function") {
+      void maybePromise.catch(() => {
+        // iOS may block autoplay until a user gesture; begin button also primes playback.
+      });
+    }
+  }, [ensureAmbientMusic, hasStarted, isSick]);
 
   const spawnParticle = (type: FeedbackType) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -425,6 +459,15 @@ export function PetCard() {
   }, [handleHeal, healCycle, healIsReady, inputsLocked, isSick]);
 
   const beginExperience = () => {
+    ensureAmbientMusic();
+    if (ambientAudioRef.current) {
+      const maybePromise = ambientAudioRef.current.play();
+      if (maybePromise && typeof maybePromise.catch === "function") {
+        void maybePromise.catch(() => {
+          // ignored: will retry from state effect after start transition
+        });
+      }
+    }
     setIsStarting(true);
     window.setTimeout(() => {
       setHasStarted(true);
