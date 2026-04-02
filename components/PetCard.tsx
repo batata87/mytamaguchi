@@ -561,6 +561,9 @@ export function PetCard() {
   };
 
   const showFlash = screenFlashTone !== null || hatchPhase === "flash";
+  const creatureTopClass = pet.stage === "egg" ? "top-[61%] sm:top-[51%]" : "top-[64%] sm:top-[51%]";
+  const creatureSizeClass =
+    pet.stage === "egg" ? "h-[172px] w-[172px] sm:h-[280px] sm:w-[280px]" : "h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]";
 
   const actionFeedbackIcon = {
     feed: "💖",
@@ -659,9 +662,9 @@ export function PetCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.88 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none fixed inset-x-0 top-[67%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+            className={`pointer-events-none fixed inset-x-0 ${creatureTopClass} z-20 flex -translate-y-1/2 items-center justify-center`}
           >
-            <div ref={creatureRef} className="pointer-events-auto h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]">
+            <div ref={creatureRef} className={`pointer-events-auto ${creatureSizeClass}`}>
               <CreatureStage
                 stage={pet.stage}
                 hatchPhase={hatchPhase}
@@ -764,7 +767,7 @@ export function PetCard() {
         ))}
       </AnimatePresence>
 
-      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-3 sm:pb-3">
+      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.2rem)] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
             ? eggIsReadyByTime

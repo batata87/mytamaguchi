@@ -149,7 +149,14 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
             transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Image src="/assets/idle.png" alt="" fill priority unoptimized className="object-cover opacity-95" />
+            <Image
+              src="/assets/idle.png"
+              alt=""
+              fill
+              priority
+              unoptimized
+              className="object-cover object-[center_38%] opacity-95 sm:object-center"
+            />
           </motion.div>
         )}
         {currentScene === "feed" && (
@@ -191,7 +198,13 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
             transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Image src="/assets/bed_background.png" alt="" fill unoptimized className="object-cover opacity-70" />
+            <Image
+              src="/assets/bed_background.png"
+              alt=""
+              fill
+              unoptimized
+              className="object-cover object-[center_36%] opacity-70 sm:object-center"
+            />
           </motion.div>
         )}
         {currentScene === "play" && (
@@ -203,7 +216,13 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
             transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Image src="/assets/nursery_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
+            <Image
+              src="/assets/nursery_background.png"
+              alt=""
+              fill
+              unoptimized
+              className="object-cover object-[center_38%] opacity-72 sm:object-center"
+            />
           </motion.div>
         )}
         {currentScene === "clean" && (
@@ -215,7 +234,13 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
             transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Image src="/assets/bath_background.png" alt="" fill unoptimized className="object-cover opacity-72" />
+            <Image
+              src="/assets/bath_background.png"
+              alt=""
+              fill
+              unoptimized
+              className="object-cover object-[center_36%] opacity-72 sm:object-center"
+            />
           </motion.div>
         )}
       </AnimatePresence>
