@@ -31,6 +31,8 @@ type SidebarProps = {
   onDragPoint: (point: { x: number; y: number }) => void;
   /** Drag-from-sidebar Pet tool (egg hatch / petting). */
   onDropPet: (point: { x: number; y: number }) => void;
+  /** True while the Pet tool is actively being dragged (anticipation on creature). */
+  onPetDragChange?: (dragging: boolean) => void;
   /** Drag sub-item from activity hover menu onto creature. */
   onSubDrop: (action: CareAction, subId: string, point: { x: number; y: number }) => void;
   onToggleAction: (action: CareAction) => void;
@@ -38,10 +40,26 @@ type SidebarProps = {
 };
 
 const careActions: Array<{ action: CareAction; label: string; icon: ReactNode }> = [
-  { action: "feed", label: "Feed", icon: <Cherry size={24} strokeWidth={1.9} /> },
-  { action: "sleep", label: "Sleep", icon: <CloudMoon size={24} strokeWidth={1.9} /> },
-  { action: "play", label: "Play", icon: <Sparkles size={24} strokeWidth={1.9} /> },
-  { action: "clean", label: "Clean", icon: <BrushCleaning size={24} strokeWidth={1.9} /> }
+  {
+    action: "feed",
+    label: "Feed",
+    icon: <span className="text-[26px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">🍒</span>
+  },
+  {
+    action: "sleep",
+    label: "Sleep",
+    icon: <span className="text-[26px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">☁️</span>
+  },
+  {
+    action: "play",
+    label: "Play",
+    icon: <span className="text-[26px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">✨</span>
+  },
+  {
+    action: "clean",
+    label: "Clean",
+    icon: <span className="text-[26px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.2)]">🫧</span>
+  }
 ];
 
 /** Gentle inertia + spring snap-back — feels soft, not a rigid button. */
@@ -73,13 +91,15 @@ function DraggablePetTool({
   icon,
   variant = "default",
   onDragPoint,
-  onDropPet
+  onDropPet,
+  onPetDragChange
 }: {
   label: string;
   icon: ReactNode;
   variant?: "default" | "hatch" | "muted";
   onDragPoint: SidebarProps["onDragPoint"];
   onDropPet: SidebarProps["onDropPet"];
+  onPetDragChange?: SidebarProps["onPetDragChange"];
 }) {
   const base =
     variant === "hatch"
@@ -94,8 +114,12 @@ function DraggablePetTool({
       dragListener
       {...tactileDragProps}
       whileDrag={{ scale: 1.08, zIndex: 50 }}
+      onDragStart={() => onPetDragChange?.(true)}
       onDrag={(_, info: PanInfo) => onDragPoint(info.point)}
-      onDragEnd={(_, info: PanInfo) => onDropPet(info.point)}
+      onDragEnd={(_, info: PanInfo) => {
+        onPetDragChange?.(false);
+        onDropPet(info.point);
+      }}
       className={`${base} touch-none`}
       aria-label={label}
     >
@@ -215,6 +239,7 @@ export function Sidebar({
   lockedActions = [],
   onDragPoint,
   onDropPet,
+  onPetDragChange,
   onSubDrop,
   onToggleAction,
   onCloseMenu,
@@ -261,10 +286,11 @@ export function Sidebar({
         {!isEgg && (
           <DraggablePetTool
             label="Pet"
-            icon={<Sparkle size={18} />}
+            icon={<span className="text-[22px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.18)]">💕</span>}
             variant="default"
             onDragPoint={onDragPoint}
             onDropPet={onDropPet}
+            onPetDragChange={onPetDragChange}
           />
         )}
       </div>

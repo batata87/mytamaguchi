@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, BellOff, BookHeart, Home } from "lucide-react";
+import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { ChooseEggScreen } from "@/components/ChooseEggScreen";
 import { CreatureStage } from "@/components/CreatureStage";
 import { GrowthJourney } from "@/components/GrowthJourney";
@@ -166,6 +166,8 @@ export function PetCard() {
   const [dailyToast, setDailyToast] = useState<string | null>(null);
   const [reunionPlayKey, setReunionPlayKey] = useState(0);
   const [feedSquashNonce, setFeedSquashNonce] = useState(0);
+  const [statsPanelOpen, setStatsPanelOpen] = useState(true);
+  const [draggingPetTool, setDraggingPetTool] = useState(false);
   const reunionConsumedRef = useRef(false);
 
   useInterval(() => {
@@ -799,7 +801,14 @@ export function PetCard() {
   };
 
   const showFlash = screenFlashTone !== null || hatchPhase === "flash";
-  const creatureTopClass = pet.stage === "egg" ? "top-[61%] sm:top-[51%]" : "top-[64%] sm:top-[51%]";
+  const creatureTopClass =
+    statsPanelOpen
+      ? pet.stage === "egg"
+        ? "top-[61%] sm:top-[51%]"
+        : "top-[64%] sm:top-[51%]"
+      : pet.stage === "egg"
+        ? "top-[53%] sm:top-[46%]"
+        : "top-[56%] sm:top-[46%]";
   const creatureSizeClass =
     pet.stage === "egg" ? "h-[172px] w-[172px] sm:h-[280px] sm:w-[280px]" : "h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]";
 
@@ -819,6 +828,7 @@ export function PetCard() {
   }, [pet.stage, hatchPhase]);
 
   const careStylePill = careStyleLabel(deriveCareStyle(playerMeta));
+  const avgVitality = (pet.hunger + pet.energy + pet.joy + pet.hygiene) / 4;
   const cravingForStage =
     craving && pet.stage !== "egg"
       ? { label: craving.label, emoji: craving.emoji, expiresAt: craving.expiresAt }
@@ -909,32 +919,62 @@ export function PetCard() {
             </div>
           </div>
 
-          <GrowthJourney stage={pet.stage} bond={pet.xp} />
+          <button
+            type="button"
+            onClick={() => setStatsPanelOpen((o) => !o)}
+            className="mb-1 mt-0.5 flex w-full items-center justify-center gap-1 rounded-full py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-600/90 transition hover:bg-white/30"
+            aria-expanded={statsPanelOpen}
+            aria-label={statsPanelOpen ? "Hide stats and mood" : "Show stats and mood"}
+          >
+            {statsPanelOpen ? (
+              <>
+                <span>Zen view</span>
+                <ChevronUp className="h-3.5 w-3.5 opacity-80" strokeWidth={2.2} />
+              </>
+            ) : (
+              <>
+                <span>Stats</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-80" strokeWidth={2.2} />
+              </>
+            )}
+          </button>
 
-          <div className="mt-2">
-            <MoodAura mood={currentMood} />
-          </div>
+          {statsPanelOpen ? (
+            <>
+              <GrowthJourney stage={pet.stage} bond={pet.xp} />
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {statConfig.map((stat) => (
-              <div key={stat.key} className="rounded-xl bg-white/72 px-2 py-1 shadow-sm">
-                <div className="mb-1 flex items-center justify-between text-[9px] font-semibold leading-none text-slate-600">
-                  <span>{stat.label}</span>
-                  <span className="tabular-nums">{pet[stat.key]}%</span>
-                </div>
-                <div
-                  className={`h-1.5 rounded-full bg-slate-100/90 transition-all duration-300 ${
-                    flashedStat === stat.key ? "ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.95)]" : ""
-                  }`}
-                >
-                  <div
-                    className={`h-1.5 rounded-full transition-all duration-300 ${stat.color}`}
-                    style={{ width: `${pet[stat.key]}%` }}
-                  />
-                </div>
+              <div className="mt-2">
+                <MoodAura mood={currentMood} />
               </div>
-            ))}
-          </div>
+
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {statConfig.map((stat) => (
+                  <div key={stat.key} className="rounded-xl bg-white/72 px-2 py-1 shadow-sm">
+                    <div className="mb-1 flex items-center justify-between text-[9px] font-semibold leading-none text-slate-600">
+                      <span>{stat.label}</span>
+                      <span className="tabular-nums">{pet[stat.key]}%</span>
+                    </div>
+                    <div
+                      className={`h-1.5 rounded-full bg-slate-100/90 transition-all duration-300 ${
+                        flashedStat === stat.key ? "ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.95)]" : ""
+                      }`}
+                    >
+                      <div
+                        className={`h-1.5 rounded-full transition-all duration-300 ${stat.color}`}
+                        style={{ width: `${pet[stat.key]}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-[10px] font-semibold text-slate-600/90">
+              Bia XP <span className="tabular-nums text-slate-800">{pet.xp}</span>
+              <span className="mx-1.5 text-slate-400">·</span>
+              <span className="text-slate-500">Watch the glow — it softens when they need care</span>
+            </p>
+          )}
           </div>
         </header>
       )}
@@ -958,7 +998,8 @@ export function PetCard() {
                 hunger={pet.hunger}
                 pleadForFood={pleadForFood}
                 craving={cravingForStage}
-                careStyleLabel={careStylePill}
+                avgVitality={avgVitality}
+                petToolPrimed={draggingPetTool}
                 happyDanceNonce={happyDanceNonce}
                 feedSquashNonce={feedSquashNonce}
                 reunionPlayKey={reunionPlayKey}
@@ -989,6 +1030,7 @@ export function PetCard() {
           onSubDrop={onSubDrop}
           onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
           onCloseMenu={() => setActiveAction(null)}
+          onPetDragChange={setDraggingPetTool}
           disabled={inputsLocked}
         />
       )}
@@ -1080,6 +1122,7 @@ export function PetCard() {
         onClose={() => setMemoryBookOpen(false)}
         memoryKeys={playerMeta.memoryKeys}
         stardust={playerMeta.stardust}
+        careStyleNote={careStylePill}
       />
 
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.2rem)] sm:px-3 sm:pb-3">
@@ -1096,8 +1139,10 @@ export function PetCard() {
                 : "Bia is sick. Use Star Elixir to begin treatment."
               : "Drag activities onto your companion. More options unlock as Bia grows."}
           <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
-            <Home size={12} className="opacity-80" />
-            <span className="font-semibold">{sceneDisplayName(currentScene)}</span>
+            <MapPin size={12} className="shrink-0 opacity-80" aria-hidden />
+            <span>
+              Room: <span className="font-semibold">{sceneDisplayName(currentScene)}</span>
+            </span>
           </div>
         </div>
       </footer>

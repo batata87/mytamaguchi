@@ -23,7 +23,10 @@ type CreatureStageProps = {
   /** Hunger low: lean toward feed / "puppy eyes" plea */
   pleadForFood: boolean;
   craving: ActiveCraving;
-  careStyleLabel: string;
+  /** Average of hunger/energy/joy/hygiene (0–100) — drives outer aura color and brightness. */
+  avgVitality: number;
+  /** Pet tool menu open: subtle “ready for pets” look before touch. */
+  petToolPrimed: boolean;
   /** Increment to replay a one-shot happy dance (e.g. craving fulfilled). */
   happyDanceNonce: number;
   /** Increment on successful feed — soft marshmallow squash-and-stretch. */
@@ -252,6 +255,31 @@ function PleadingOverlay({ active, hunger }: { active: boolean; hunger: number }
   );
 }
 
+/** Softer, warmer aura when thriving; cooler / dimmer when stats are low. */
+function vitalityAuraStyle(avg: number): { background: string; boxShadow: string; opacity: number } {
+  const t = Math.max(0, Math.min(1, avg / 100));
+  const pulse = 0.42 + t * 0.38;
+  if (t < 0.38) {
+    return {
+      background: `radial-gradient(circle, rgba(251,113,133,${0.28 + t * 0.15}) 0%, rgba(168,85,247,0.12) 55%, transparent 72%)`,
+      boxShadow: `0 0 70px rgba(251,113,133,${0.25 + t * 0.25}), 0 0 120px rgba(244,63,94,${0.12 + t * 0.1})`,
+      opacity: 0.38 + t * 0.25
+    };
+  }
+  if (t < 0.72) {
+    return {
+      background: `radial-gradient(circle, rgba(251,191,36,${0.22 + (t - 0.38) * 0.2}) 0%, rgba(253,186,116,0.14) 50%, transparent 70%)`,
+      boxShadow: `0 0 64px rgba(245,158,11,${0.22 + (t - 0.38) * 0.3})`,
+      opacity: 0.48 + (t - 0.38) * 0.35
+    };
+  }
+  return {
+    background: `radial-gradient(circle, rgba(52,211,153,${0.28 + (t - 0.72) * 0.25}) 0%, rgba(34,211,238,0.12) 55%, transparent 72%)`,
+    boxShadow: `0 0 72px rgba(16,185,129,${0.35 + (t - 0.72) * 0.25}), 0 0 100px rgba(45,212,191,${0.15 + (t - 0.72) * 0.2})`,
+    opacity: pulse
+  };
+}
+
 function CravingBubble({ craving, now }: { craving: NonNullable<ActiveCraving>; now: number }) {
   const leftMs = Math.max(0, craving.expiresAt - now);
   const secs = Math.ceil(leftMs / 1000);
@@ -282,7 +310,8 @@ export function CreatureStage({
   hunger,
   pleadForFood,
   craving,
-  careStyleLabel,
+  avgVitality,
+  petToolPrimed,
   happyDanceNonce,
   feedSquashNonce,
   reunionPlayKey,
@@ -321,25 +350,30 @@ export function CreatureStage({
     return () => window.clearInterval(id);
   }, [craving]);
 
+  const aura = vitalityAuraStyle(avgVitality);
+  const auraBreath = Math.max(0.35, Math.min(0.95, aura.opacity));
+
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
       <motion.div
-        className="absolute top-[58%] h-44 w-56 -translate-y-1/2 rounded-full bg-white/18 blur-2xl"
-        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[58%] h-48 w-60 -translate-y-1/2 rounded-full blur-3xl"
+        style={{ background: aura.background, boxShadow: aura.boxShadow }}
+        animate={{
+          scale: [1, 1.08, 1],
+          opacity: [auraBreath * 0.85, auraBreath, auraBreath * 0.88]
+        }}
+        transition={{ duration: 4.2 + (100 - avgVitality) * 0.02, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute top-[58%] h-36 w-44 -translate-y-1/2 rounded-full bg-white/10 blur-2xl"
+        animate={{ scale: [1, 1.06, 1], opacity: [0.25, 0.42, 0.28] }}
+        transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
       />
       {stage !== "egg" && !isSick && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center">
           <AnimatePresence>
             {craving && <CravingBubble craving={craving} now={nowTick} key="craving" />}
           </AnimatePresence>
-        </div>
-      )}
-      {stage !== "egg" && careStyleLabel && (
-        <div className="pointer-events-none absolute bottom-0 left-1/2 z-30 -translate-x-1/2 translate-y-full pb-1 text-center">
-          <span className="rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur-sm">
-            {careStyleLabel}
-          </span>
         </div>
       )}
       <motion.button
@@ -380,11 +414,32 @@ export function CreatureStage({
           ) : (
             <motion.div
               variants={breatheVariants}
-              transition={{ duration: breatheDuration, ease: "easeInOut", repeat: Infinity }}
               initial={false}
               className={`relative ${mood === "blissful" ? "drop-shadow-[0_0_22px_rgba(251,191,36,0.75)]" : ""}`}
-              animate={isExcited ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] } : "idle"}
+              animate={
+                isExcited
+                  ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] }
+                  : petToolPrimed && !isSick
+                    ? { scaleY: [1, 0.94, 1], scaleX: [1, 1.03, 1], y: [0, -1, 0] }
+                    : "idle"
+              }
+              style={petToolPrimed && !isExcited ? { transformOrigin: "center 60%" } : undefined}
+              transition={
+                isExcited
+                  ? { duration: 0.55, ease: "easeOut" }
+                  : petToolPrimed && !isSick
+                    ? { duration: 2.2, repeat: Infinity, ease: "easeInOut" }
+                    : { duration: breatheDuration, ease: "easeInOut", repeat: Infinity }
+              }
             >
+              {petToolPrimed && !isSick && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-[10%] z-20 -translate-x-1/2 text-2xl opacity-95 drop-shadow-md"
+                  aria-hidden
+                >
+                  😌
+                </div>
+              )}
               <PleadingOverlay active={pleadForFood && !isSick} hunger={hunger} />
               <ReactionOverlay activityReaction={activityReaction} />
               <motion.div

@@ -66,7 +66,7 @@ export function careStyleLabel(style: CareStyle): string {
     case "play":
       return "Star horns";
     default:
-      return "Balanced bond";
+      return "Balanced care";
   }
 }
 

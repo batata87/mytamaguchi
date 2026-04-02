@@ -8,6 +8,8 @@ type MemoryBookProps = {
   onClose: () => void;
   memoryKeys: string[];
   stardust: number;
+  /** How you’ve been raising Bia (shown once in the book, not on the creature). */
+  careStyleNote?: string;
 };
 
 function formatMemoryLabel(key: string): string {
@@ -16,7 +18,7 @@ function formatMemoryLabel(key: string): string {
   return `${action} · ${sub}${sceneNice ? ` · ${sceneNice}` : ""}`;
 }
 
-export function MemoryBook({ open, onClose, memoryKeys, stardust }: MemoryBookProps) {
+export function MemoryBook({ open, onClose, memoryKeys, stardust, careStyleNote }: MemoryBookProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -51,10 +53,15 @@ export function MemoryBook({ open, onClose, memoryKeys, stardust }: MemoryBookPr
                 Memory Book
               </h2>
             </div>
-            <p className="mb-3 text-xs text-white/65">
+            <p className="mb-2 text-xs text-white/65">
               Stickers unlock when you try a new care combo or room. Stardust:{" "}
               <span className="font-semibold text-amber-200">{stardust}</span>
             </p>
+            {careStyleNote ? (
+              <p className="mb-3 text-[11px] text-white/55">
+                Your care style: <span className="font-medium text-white/85">{careStyleNote}</span>
+              </p>
+            ) : null}
             <div className="max-h-[min(50vh,360px)] space-y-2 overflow-y-auto pr-1">
               {memoryKeys.length === 0 ? (
                 <p className="text-sm text-white/55">Nothing yet — play, feed, and explore scenes to fill this book.</p>

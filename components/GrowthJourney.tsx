@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import type { PetStage } from "@/lib/game";
@@ -74,7 +75,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
               <div className="flex shrink-0 flex-col items-center justify-center gap-1">
                 <motion.div
                   key={isCurrent ? `${step.id}-${twinkleKey}` : step.id}
-                  className={`flex items-center justify-center rounded-full border ${
+                  className={`relative flex items-center justify-center overflow-hidden rounded-full border ${
                     isCurrent
                       ? "h-10 w-10 border-white/85 bg-white/20 shadow-[0_0_18px_rgba(255,255,255,0.35)]"
                       : isDone
@@ -95,8 +96,18 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                     ease: "easeInOut"
                   }}
                 >
+                  {step.id === "teen" && state === "upcoming" && (
+                    <Image
+                      src="/assets/stage4_medium.png"
+                      alt=""
+                      width={64}
+                      height={64}
+                      unoptimized
+                      className="absolute inset-0 h-full w-full object-cover opacity-[0.22]"
+                    />
+                  )}
                   <Star
-                    className={`${
+                    className={`relative z-[1] ${
                       isDone
                         ? "fill-white text-white"
                         : isCurrent

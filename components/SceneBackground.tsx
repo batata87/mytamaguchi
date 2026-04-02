@@ -285,26 +285,22 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
             transition={{ duration: sceneDuration, ease: sceneEase }}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_34%),linear-gradient(180deg,rgba(255,240,245,0.72),rgba(236,233,255,0.78)_36%,rgba(220,228,255,0.82))]" />
-            <motion.div
-              className="absolute inset-x-0 top-[6%] mx-auto w-full max-w-6xl px-3 sm:top-[7%] sm:px-6"
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.99 }}
-              transition={{ duration: sceneDuration, ease: sceneEase }}
-              style={{ x: bgX, y: bgY }}
-            >
-              <div className="overflow-hidden rounded-[2rem] border border-white/30 bg-white/12 shadow-[0_24px_70px_rgba(55,45,95,0.18)]">
-                <Image
-                  src="/assets/kitchen.png"
-                  alt=""
-                  width={1600}
-                  height={820}
-                  unoptimized
-                  className="h-auto w-full object-cover"
-                />
-              </div>
+            {/* Full-bleed kitchen: wide art is cropped for portrait via object-cover + center bias (sink / star light). */}
+            <motion.div className="absolute inset-0" style={{ x: bgX, y: bgY }}>
+              <Image
+                src="/assets/kitchen.png"
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                unoptimized
+                className="object-cover object-[center_34%] sm:object-[center_36%]"
+              />
             </motion.div>
+            <div
+              className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,248,252,0.35)_0%,transparent_28%,transparent_55%,rgba(30,27,75,0.12)_100%)]"
+              aria-hidden
+            />
             <KitchenParallaxDecor fgX={fgX} fgY={fgY} midX={midX} midY={midY} />
           </motion.div>
         )}
