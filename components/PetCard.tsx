@@ -298,6 +298,11 @@ export function PetCard() {
 
   const triggerPetJump = () => {
     if (pet.stage === "egg") {
+      if (pet.xp >= XP_HATCH_TARGET) {
+        void executeHatch();
+        return;
+      }
+
       if (!eggIsReadyByTime) {
         const warmGain = Math.max(0, Math.min(3, XP_HATCH_TARGET - pet.xp));
         if (warmGain > 0) {
@@ -357,7 +362,7 @@ export function PetCard() {
   const eggProgressPct = eggCycle
     ? Math.max(0, Math.min(100, ((nowTick - eggCycle.startedAt) / Math.max(1, eggCycle.readyAt - eggCycle.startedAt)) * 100))
     : 0;
-  const eggIsReadyByTime = !!eggCycle && nowTick >= eggCycle.readyAt;
+  const eggIsReadyByTime = (!!eggCycle && nowTick >= eggCycle.readyAt) || pet.xp >= XP_HATCH_TARGET;
   const eggRemainingLabel = eggCycle ? formatRemaining(eggCycle.readyAt - nowTick) : "--";
 
   const healProgressPct = healCycle
