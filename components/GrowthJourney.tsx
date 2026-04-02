@@ -6,6 +6,7 @@ import { Star } from "lucide-react";
 import type { PetStage } from "@/lib/game";
 import {
   JOURNEY_STAGES,
+  XP_HATCH_TARGET,
   XP_BABY_TO_MID,
   XP_MASTERY_CAP,
   XP_MID_TO_GROWN,
@@ -35,7 +36,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
 
   const nextGoal =
     stage === "egg"
-      ? { label: "Hatch", target: 100 }
+      ? { label: "Hatch", target: XP_HATCH_TARGET }
       : stage === "baby"
         ? { label: "Mid", target: XP_BABY_TO_MID }
         : stage === "teen"

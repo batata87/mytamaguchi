@@ -7,7 +7,6 @@ import {
   BrushCleaning,
   Cherry,
   CloudMoon,
-  Hand,
   Sparkle,
   Sparkles,
   Stars,
@@ -228,39 +227,9 @@ export function Sidebar({
       <div className="flex w-full max-w-[min(100%,520px)] flex-col gap-2 sm:w-auto sm:max-w-none sm:gap-3">
       {isEgg && (
         <>
-          <div className="hidden rounded-2xl border border-amber-400/50 bg-amber-100/20 p-2.5 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:block">
-            <p className="mb-1.5 text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
-              Hatch the egg
-            </p>
-            <DraggablePetTool
-              label="Pet"
-              icon={<Hand size={22} className="text-amber-900" />}
-              variant="hatch"
-              onDragPoint={onDragPoint}
-              onDropPet={onDropPet}
-            />
-            <p className="mt-2 text-center text-[9px] font-medium leading-snug text-amber-950/90">
-              Tap the egg or drag <strong>Pet</strong> onto it
-            </p>
-          </div>
-          <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 px-3 py-2 shadow-lg shadow-amber-900/10 backdrop-blur-sm sm:hidden">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">
-                  Hatch the egg
-                </p>
-                <p className="mt-0.5 text-[9px] font-medium leading-snug text-amber-950/90">
-                  Tap the egg or drag <strong>Pet</strong> onto it
-                </p>
-              </div>
-              <DraggablePetTool
-                label="Pet"
-                icon={<Hand size={20} className="text-amber-900" />}
-                variant="hatch"
-                onDragPoint={onDragPoint}
-                onDropPet={onDropPet}
-              />
-            </div>
+          <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 px-3 py-2 shadow-lg shadow-amber-900/10 backdrop-blur-sm">
+            <p className="text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">Heat the egg</p>
+            <p className="mt-0.5 text-center text-[9px] font-medium leading-snug text-amber-950/90">Heat the egg by tapping it</p>
           </div>
         </>
       )}

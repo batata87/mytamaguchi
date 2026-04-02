@@ -12,6 +12,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
+import { XP_HATCH_TARGET } from "@/lib/stageProgress";
 import { useInterval } from "@/hooks/useInterval";
 import { usePetEngine } from "@/hooks/usePetEngine";
 
@@ -95,7 +96,7 @@ export function PetCard() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
-  const shouldHideMain = !isReady || (hasStarted && needsEggChoice);
+  const shouldHideMain = !isReady || !hasStarted || (hasStarted && needsEggChoice);
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [eggCycle, setEggCycle] = useState<EggCycleMeta | null>(null);
   const [healCycle, setHealCycle] = useState<HealCycleMeta | null>(null);
@@ -298,16 +299,16 @@ export function PetCard() {
   const triggerPetJump = () => {
     if (pet.stage === "egg") {
       if (!eggIsReadyByTime) {
-        const warmGain = Math.max(0, Math.min(3, 95 - pet.xp));
+        const warmGain = Math.max(0, Math.min(3, XP_HATCH_TARGET - 20 - pet.xp));
         if (warmGain > 0) {
           applyStatDelta({}, warmGain);
         }
         return;
       }
 
-      const nextBondXp = Math.min(100, pet.xp + 8);
+      const nextBondXp = Math.min(XP_HATCH_TARGET, pet.xp + 8);
       applyStatDelta({}, 8);
-      if (nextBondXp >= 100) {
+      if (nextBondXp >= XP_HATCH_TARGET) {
         window.setTimeout(() => {
           void executeHatch();
         }, 120);
@@ -345,11 +346,11 @@ export function PetCard() {
   };
 
   const currentEggAsset =
-    pet.xp < 25
+    pet.xp < XP_HATCH_TARGET * 0.33
       ? "/assets/stage0.png"
-      : pet.xp < 50
+      : pet.xp < XP_HATCH_TARGET * 0.66
         ? "/assets/stage1.png"
-        : pet.xp < 75
+        : pet.xp < XP_HATCH_TARGET
           ? "/assets/stage2.png"
           : "/assets/stage2.png";
 
@@ -365,7 +366,7 @@ export function PetCard() {
   const healIsReady = !!healCycle && nowTick >= healCycle.readyAt;
   const healRemainingLabel = healCycle ? formatRemaining(healCycle.readyAt - nowTick) : "--";
 
-  const eggShouldWobble = pet.stage === "egg" && pet.xp >= 75;
+  const eggShouldWobble = pet.stage === "egg" && pet.xp >= XP_HATCH_TARGET * 0.75;
 
   const executeHatch = async () => {
     if (pet.stage !== "egg" || hatchPhase !== "idle" || inputsLocked) {
@@ -379,7 +380,7 @@ export function PetCard() {
     setHatchPhase("flash");
     await new Promise((resolve) => setTimeout(resolve, 260));
     setUseDefaultBabyAsset(true);
-    setStage("baby", 100, { silent: true });
+    setStage("baby", XP_HATCH_TARGET, { silent: true });
     await triggerSchoolPrideBurst();
     setCurrentScene("nursery");
     setTimeout(() => {
@@ -416,7 +417,7 @@ export function PetCard() {
     localStorage.removeItem(HEAL_CYCLE_STORAGE_KEY);
     setHealCycle(null);
     void handleHeal();
-  }, [isSick, healCycle, healIsReady, inputsLocked]);
+  }, [handleHeal, healCycle, healIsReady, inputsLocked, isSick]);
 
   const beginExperience = () => {
     setIsStarting(true);
@@ -494,9 +495,9 @@ export function PetCard() {
     }
 
     if (pet.stage === "egg") {
-      const nextBondXp = Math.min(100, pet.xp + 10);
+      const nextBondXp = Math.min(XP_HATCH_TARGET, pet.xp + 10);
       applyStatDelta({}, 10);
-      if (nextBondXp >= 100) {
+      if (nextBondXp >= XP_HATCH_TARGET) {
         window.setTimeout(() => {
           void executeHatch();
         }, 120);
@@ -573,7 +574,7 @@ export function PetCard() {
 
   return (
     <motion.section
-      className={`relative min-h-screen text-slate-800 ${!isReady ? "opacity-0" : ""}`}
+      className={`relative min-h-screen text-slate-800 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
       initial={false}
       animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
       transition={{ duration: 0.7, ease: "easeInOut" }}
@@ -763,7 +764,7 @@ export function PetCard() {
           {pet.stage === "egg"
             ? eggIsReadyByTime
               ? "Egg is warm enough. Keep caring to trigger hatch."
-              : `Warming egg: ${Math.round(eggProgressPct)}% • Ready in ~${eggRemainingLabel}`
+              : `Heat the egg by tapping it • Warmth ${Math.round(eggProgressPct)}% • Ready in ~${eggRemainingLabel}`
             : isSick
               ? healCycle
                 ? healIsReady
