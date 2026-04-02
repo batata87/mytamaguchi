@@ -262,7 +262,7 @@ export function Sidebar({
         </>
       )}
 
-      <div className="flex flex-row items-end justify-center gap-2 overflow-x-auto overflow-y-visible rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
+      <div className="flex flex-row items-end justify-center gap-2 overflow-x-visible overflow-y-visible rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
         <p className="px-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-slate-700">
           {isEgg ? "After hatch" : "Activities"}
         </p>

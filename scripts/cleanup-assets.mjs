@@ -17,6 +17,7 @@ const gameplayAssets = [
   "soup.png",
   "ball.png",
   "yoyo.png",
+  "sick.png",
   "clean_menu_icon.png"
 ];
 
