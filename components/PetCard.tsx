@@ -582,8 +582,8 @@ export function PetCard() {
       <SceneBackground currentScene={currentScene} mood={currentMood} isSick={isSick} />
 
       {!shouldHideMain && (
-        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2.5 sm:px-3 sm:pt-3">
-          <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2 sm:px-3 sm:pt-3">
+          <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/40 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md sm:px-3 sm:py-3.5">
           <div className="mb-1 flex items-center justify-center">
             {isRenaming ? (
               <input
@@ -618,24 +618,24 @@ export function PetCard() {
 
           <GrowthJourney stage={pet.stage} bond={pet.xp} />
 
-          <div className="mt-3">
+          <div className="mt-2">
             <MoodAura mood={currentMood} />
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <div className="mt-2 grid grid-cols-2 gap-2">
             {statConfig.map((stat) => (
-              <div key={stat.key} className="rounded-xl bg-white/72 px-2 py-1.5 shadow-sm">
-                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold leading-none text-slate-600">
+              <div key={stat.key} className="rounded-xl bg-white/72 px-2 py-1 shadow-sm">
+                <div className="mb-1 flex items-center justify-between text-[9px] font-semibold leading-none text-slate-600">
                   <span>{stat.label}</span>
                   <span className="tabular-nums">{pet[stat.key]}%</span>
                 </div>
                 <div
-                  className={`h-2 rounded-full bg-slate-100/90 transition-all duration-300 ${
+                  className={`h-1.5 rounded-full bg-slate-100/90 transition-all duration-300 ${
                     flashedStat === stat.key ? "ring-2 ring-white shadow-[0_0_14px_rgba(255,255,255,0.95)]" : ""
                   }`}
                 >
                   <div
-                    className={`h-2 rounded-full transition-all duration-300 ${stat.color}`}
+                    className={`h-1.5 rounded-full transition-all duration-300 ${stat.color}`}
                     style={{ width: `${pet[stat.key]}%` }}
                   />
                 </div>
@@ -654,9 +654,9 @@ export function PetCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.88 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none fixed inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+            className="pointer-events-none fixed inset-x-0 top-[63%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
           >
-            <div ref={creatureRef} className="pointer-events-auto h-[170px] w-[170px] sm:h-[280px] sm:w-[280px]">
+            <div ref={creatureRef} className="pointer-events-auto h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]">
               <CreatureStage
                 stage={pet.stage}
                 hatchPhase={hatchPhase}

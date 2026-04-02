@@ -56,28 +56,28 @@ export function MoodAura({ mood }: { mood: PetMood }) {
 
   return (
     <motion.div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-r p-[1px] ${v.ring} ring-1 shadow-sm`}
+      className={`relative overflow-hidden rounded-xl bg-gradient-to-r p-[1px] ${v.ring} ring-1 shadow-sm`}
       initial={false}
       animate={{ opacity: [0.92, 1, 0.92] }}
       transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
     >
       <div
-        className={`flex items-center justify-between gap-2 rounded-[15px] bg-gradient-to-r px-3 py-2 ${v.gradient}`}
+        className={`flex items-center justify-between gap-2 rounded-[11px] bg-gradient-to-r px-2.5 py-1.5 ${v.gradient}`}
       >
         <div className="flex items-center gap-2">
           <span
-            className={`flex h-9 w-9 items-center justify-center rounded-full text-lg shadow-inner backdrop-blur-sm ${v.chip}`}
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-base shadow-inner backdrop-blur-sm ${v.chip}`}
             aria-hidden
           >
             {v.icon}
           </span>
           <div className="min-w-0">
-            <p className={`text-[9px] font-semibold uppercase tracking-normal ${v.sub}`}>Mood</p>
-            <p className={`truncate text-sm font-bold leading-tight ${v.text}`}>{v.label}</p>
-            <p className={`text-[10px] leading-tight ${v.sub}`}>{v.detail}</p>
+            <p className={`text-[8px] font-semibold uppercase tracking-normal ${v.sub}`}>Mood</p>
+            <p className={`truncate text-[13px] font-bold leading-tight ${v.text}`}>{v.label}</p>
+            <p className={`text-[9px] leading-tight ${v.sub}`}>{v.detail}</p>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-4 -top-6 h-16 w-16 rounded-full bg-white/25 blur-2xl" />
+        <div className="pointer-events-none absolute -right-4 -top-6 h-14 w-14 rounded-full bg-white/25 blur-2xl" />
       </div>
     </motion.div>
   );
