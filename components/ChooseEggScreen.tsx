@@ -33,6 +33,19 @@ const eggOptions: Array<{
   }
 ];
 
+/** Shared egg shell: fixed box + bottom alignment so all three match; gentle pulse only (no y/rotate drift). */
+function EggShell({ shellClass, glowClass }: { shellClass: string; glowClass: string }) {
+  return (
+    <div className="flex h-[100px] w-full items-end justify-center pb-0.5">
+      <motion.div
+        className={`h-24 w-16 shrink-0 rounded-[48%_48%_42%_42%/58%_58%_42%_42%] bg-gradient-to-b ${shellClass} ${glowClass}`}
+        animate={{ opacity: [0.94, 1, 0.94], scale: [1, 1.02, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
 export function ChooseEggScreen({ onChoose }: ChooseEggScreenProps) {
   return (
     <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-md">
@@ -43,19 +56,15 @@ export function ChooseEggScreen({ onChoose }: ChooseEggScreenProps) {
           {eggOptions.map((option) => (
             <motion.button
               key={option.id}
+              type="button"
               onClick={() => onChoose(option.id)}
-              className="flex h-[156px] flex-col items-center justify-between rounded-3xl border border-white/15 bg-white/5 px-3 py-4 text-center"
-              whileHover={{ y: -4, scale: 1.02 }}
+              className="flex min-h-[160px] flex-col items-stretch justify-between rounded-3xl border border-white/15 bg-white/5 px-3 py-3 text-center"
+              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.2 }}
             >
-              <div className="flex h-24 w-full items-end justify-center">
-                <motion.div
-                  className={`h-24 w-16 rounded-[48%_48%_42%_42%/58%_58%_42%_42%] bg-gradient-to-b ${option.shellClass} ${option.glowClass}`}
-                  animate={{ y: [0, -4, 0], rotate: [0, -1.25, 1.25, 0] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                />
-              </div>
-              <div className="mt-3 text-xs font-semibold text-white/90">{option.label}</div>
+              <EggShell shellClass={option.shellClass} glowClass={option.glowClass} />
+              <div className="mt-2 text-xs font-semibold text-white/90">{option.label}</div>
             </motion.button>
           ))}
         </div>

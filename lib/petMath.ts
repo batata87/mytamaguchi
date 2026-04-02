@@ -8,7 +8,7 @@ export const DECAY_PER_MINUTE = {
   hygiene: 0.75
 } as const;
 
-export const XP_MILESTONES = [200, 500, 1000] as const;
+export const XP_MILESTONES = [1500, 5000, 12000] as const;
 
 export function clampStat(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value * 10) / 10));
@@ -40,11 +40,11 @@ export function calculateEvolution(xp: number, currentStage: PetStage): PetStage
     return "egg";
   }
 
-  if (xp >= 500) {
+  if (xp >= 5000) {
     return "adult";
   }
 
-  if (xp >= 200) {
+  if (xp >= 1500) {
     return "teen";
   }
 

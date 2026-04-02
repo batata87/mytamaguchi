@@ -11,9 +11,12 @@ export const STAGE_LABEL: Record<PetStage, string> = {
 /** XP thresholds tuned for slower progression pacing. */
 export const XP_HATCH_FLOOR = 30;
 export const XP_HATCH_TARGET = 500;
-export const XP_BABY_TO_MID = 200;
-export const XP_MID_TO_GROWN = 500;
-export const XP_MASTERY_CAP = 1000;
+/** Baby → Mid: long runway so new players stay in Baby for meaningful sessions. */
+export const XP_BABY_TO_MID = 1500;
+/** Mid → Grown: major milestone; total path to Grown is intentionally slow. */
+export const XP_MID_TO_GROWN = 5000;
+/** Optional long-term peak after Grown. */
+export const XP_MASTERY_CAP = 12000;
 
 export type GrowthSegment = {
   title: string;

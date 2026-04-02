@@ -79,7 +79,7 @@ function hasSicknessState(p: Pick<PetState, "hunger" | "energy" | "joy" | "hygie
 
 export type UsePetEngineOptions = {
   onEvolution?: (from: PetStage, to: PetStage) => void;
-  onXpMilestone?: (milestone: 200 | 500 | 1000) => void;
+  onXpMilestone?: (milestone: 1500 | 5000 | 12000) => void;
 };
 
 export function usePetEngine(options: UsePetEngineOptions = {}) {
@@ -182,7 +182,7 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
 
         const milestones = getCrossedXpMilestones(prevXp, evolved.xp);
         milestones.forEach((idx) => {
-          const m = [200, 500, 1000][idx] as 200 | 500 | 1000;
+          const m = [1500, 5000, 12000][idx] as 1500 | 5000 | 12000;
           onXpMilestone?.(m);
         });
 

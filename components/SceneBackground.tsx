@@ -127,27 +127,30 @@ export function SceneBackground({
 }) {
   const gradientKey = currentScene;
 
+  const sceneEase = [0.4, 0, 0.2, 1] as const;
+  const sceneDuration = 1.35;
+
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <AnimatePresence mode="sync">
+      <AnimatePresence mode="wait">
         <motion.div
           key={gradientKey}
           className={`absolute inset-0 bg-gradient-to-b ${resolveSceneClass(currentScene)}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: sceneDuration, ease: sceneEase }}
         />
       </AnimatePresence>
-      <AnimatePresence mode="sync">
+      <AnimatePresence mode="wait">
         {currentScene === "nursery" && (
           <motion.div
             key="scene-nursery"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
-            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
+            transition={{ duration: sceneDuration, ease: sceneEase }}
           >
             <Image
               src="/assets/idle.png"
@@ -163,18 +166,18 @@ export function SceneBackground({
           <motion.div
             key="scene-feed"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.03, filter: "blur(12px)" }}
+            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
-            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
+            transition={{ duration: sceneDuration, ease: sceneEase }}
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_34%),linear-gradient(180deg,rgba(255,240,245,0.72),rgba(236,233,255,0.78)_36%,rgba(220,228,255,0.82))]" />
             <motion.div
               className="absolute inset-x-0 top-[6%] mx-auto w-full max-w-6xl px-3 sm:top-[7%] sm:px-6"
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.985 }}
-              transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, y: 8, scale: 0.99 }}
+              transition={{ duration: sceneDuration, ease: sceneEase }}
             >
               <div className="overflow-hidden rounded-[2rem] border border-white/30 bg-white/12 shadow-[0_24px_70px_rgba(55,45,95,0.18)]">
                 <Image
@@ -193,10 +196,10 @@ export function SceneBackground({
           <motion.div
             key="scene-sleep"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
-            transition={{ duration: 1.05, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
+            transition={{ duration: sceneDuration, ease: sceneEase }}
           >
             <Image
               src="/assets/bed_background.png"
@@ -211,10 +214,10 @@ export function SceneBackground({
           <motion.div
             key="scene-play"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
-            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
+            transition={{ duration: sceneDuration, ease: sceneEase }}
           >
             <Image
               src="/assets/nursery_background.png"
@@ -229,10 +232,10 @@ export function SceneBackground({
           <motion.div
             key="scene-clean"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.02, filter: "blur(10px)" }}
+            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.015, filter: "blur(8px)" }}
-            transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
+            transition={{ duration: sceneDuration, ease: sceneEase }}
           >
             <Image
               src="/assets/bath_background.png"
