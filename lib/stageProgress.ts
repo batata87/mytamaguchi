@@ -8,11 +8,11 @@ export const STAGE_LABEL: Record<PetStage, string> = {
   adult: "Grown"
 };
 
-/** XP thresholds: hatch floors at 30; evolve baby→mid @50, mid→grown @250; optional mastery to 750. */
+/** XP thresholds tuned for slower progression pacing. */
 export const XP_HATCH_FLOOR = 30;
-export const XP_BABY_TO_MID = 50;
-export const XP_MID_TO_GROWN = 250;
-export const XP_MASTERY_CAP = 750;
+export const XP_BABY_TO_MID = 200;
+export const XP_MID_TO_GROWN = 500;
+export const XP_MASTERY_CAP = 1000;
 
 export type GrowthSegment = {
   title: string;

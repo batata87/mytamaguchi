@@ -21,6 +21,13 @@ type HatchPhase = "idle" | "shake" | "flash";
 type AnticipationState = "idle" | "dragging" | "near";
 type ScreenFlashTone = "chromatic" | "cyan" | null;
 type ActivityReaction = "feed" | "sleep" | "play" | "clean" | null;
+type EggCycleMeta = { startedAt: number; readyAt: number; eggType: "pink" | "blue" | "gold" };
+type HealCycleMeta = { startedAt: number; readyAt: number };
+
+const EGG_CYCLE_STORAGE_KEY = "bia-egg-cycle-v1";
+const HEAL_CYCLE_STORAGE_KEY = "bia-heal-cycle-v1";
+const EGG_HATCH_DURATION_MS = 36 * 60 * 60 * 1000; // 1.5 days
+const HEAL_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 type Particle = {
   id: number;
@@ -45,6 +52,19 @@ const statConfig: Array<{ key: StatKey; label: string; color: string }> = [
   { key: "joy", label: "Joy", color: "bg-amber-400" },
   { key: "hygiene", label: "Hygiene", color: "bg-emerald-400" }
 ];
+
+function formatRemaining(ms: number): string {
+  const safe = Math.max(0, ms);
+  const totalMinutes = Math.ceil(safe / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return `${days}d ${remHours}h`;
+  }
+  return `${hours}h ${mins}m`;
+}
 
 export function PetCard() {
   const onEvolution = useCallback(() => {
@@ -76,6 +96,9 @@ export function PetCard() {
   const [isStarting, setIsStarting] = useState(false);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
   const shouldHideMain = !isReady || (hasStarted && needsEggChoice);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const [eggCycle, setEggCycle] = useState<EggCycleMeta | null>(null);
+  const [healCycle, setHealCycle] = useState<HealCycleMeta | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [activityReaction, setActivityReaction] = useState<ActivityReaction>(null);
@@ -108,6 +131,52 @@ export function PetCard() {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowTick(Date.now());
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isReady || needsEggChoice || pet.stage !== "egg") {
+      return;
+    }
+    const now = Date.now();
+    const raw = localStorage.getItem(EGG_CYCLE_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as EggCycleMeta;
+        if (parsed.eggType === pet.eggType) {
+          setEggCycle(parsed);
+          return;
+        }
+      } catch {
+        // ignore broken local value
+      }
+    }
+    const created: EggCycleMeta = { startedAt: now, readyAt: now + EGG_HATCH_DURATION_MS, eggType: pet.eggType };
+    setEggCycle(created);
+    localStorage.setItem(EGG_CYCLE_STORAGE_KEY, JSON.stringify(created));
+  }, [isReady, needsEggChoice, pet.stage, pet.eggType]);
+
+  useEffect(() => {
+    if (!isReady || !isSick) {
+      setHealCycle(null);
+      return;
+    }
+    const raw = localStorage.getItem(HEAL_CYCLE_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as HealCycleMeta;
+      setHealCycle(parsed);
+    } catch {
+      // ignore broken local value
+    }
+  }, [isReady, isSick]);
 
   useEffect(() => {
     if (!isRenaming) {
@@ -228,8 +297,16 @@ export function PetCard() {
 
   const triggerPetJump = () => {
     if (pet.stage === "egg") {
-      const nextBondXp = Math.min(100, pet.xp + 10);
-      applyStatDelta({}, 10);
+      if (!eggIsReadyByTime) {
+        const warmGain = Math.max(0, Math.min(3, 95 - pet.xp));
+        if (warmGain > 0) {
+          applyStatDelta({}, warmGain);
+        }
+        return;
+      }
+
+      const nextBondXp = Math.min(100, pet.xp + 8);
+      applyStatDelta({}, 8);
       if (nextBondXp >= 100) {
         window.setTimeout(() => {
           void executeHatch();
@@ -276,6 +353,18 @@ export function PetCard() {
           ? "/assets/stage2.png"
           : "/assets/stage2.png";
 
+  const eggProgressPct = eggCycle
+    ? Math.max(0, Math.min(100, ((nowTick - eggCycle.startedAt) / Math.max(1, eggCycle.readyAt - eggCycle.startedAt)) * 100))
+    : 0;
+  const eggIsReadyByTime = !!eggCycle && nowTick >= eggCycle.readyAt;
+  const eggRemainingLabel = eggCycle ? formatRemaining(eggCycle.readyAt - nowTick) : "--";
+
+  const healProgressPct = healCycle
+    ? Math.max(0, Math.min(100, ((nowTick - healCycle.startedAt) / Math.max(1, healCycle.readyAt - healCycle.startedAt)) * 100))
+    : 0;
+  const healIsReady = !!healCycle && nowTick >= healCycle.readyAt;
+  const healRemainingLabel = healCycle ? formatRemaining(healCycle.readyAt - nowTick) : "--";
+
   const eggShouldWobble = pet.stage === "egg" && pet.xp >= 75;
 
   const executeHatch = async () => {
@@ -300,7 +389,7 @@ export function PetCard() {
     }, 600);
   };
 
-  const handleHeal = async () => {
+  const handleHeal = useCallback(async () => {
     if (inputsLocked || !isSick) {
       return;
     }
@@ -318,7 +407,16 @@ export function PetCard() {
       setInputsLocked(false);
       setActiveAction(null);
     }, 650);
-  };
+  }, [flashStat, healPet, inputsLocked, isSick, spawnParticle, triggerBiaPulse]);
+
+  useEffect(() => {
+    if (!isSick || !healCycle || !healIsReady || inputsLocked) {
+      return;
+    }
+    localStorage.removeItem(HEAL_CYCLE_STORAGE_KEY);
+    setHealCycle(null);
+    void handleHeal();
+  }, [isSick, healCycle, healIsReady, inputsLocked]);
 
   const beginExperience = () => {
     setIsStarting(true);
@@ -329,6 +427,10 @@ export function PetCard() {
   };
 
   const chooseEgg = (eggType: "pink" | "blue" | "gold") => {
+    const now = Date.now();
+    const created: EggCycleMeta = { startedAt: now, readyAt: now + EGG_HATCH_DURATION_MS, eggType };
+    setEggCycle(created);
+    localStorage.setItem(EGG_CYCLE_STORAGE_KEY, JSON.stringify(created));
     void createPet(eggType);
   };
 
@@ -341,7 +443,16 @@ export function PetCard() {
     }
   };
 
+  const stageLockedActions: CareAction[] =
+    pet.stage === "baby" ? ["play"] : pet.stage === "egg" ? ["feed", "sleep", "play", "clean"] : [];
+  const sickLockedActions: CareAction[] = isSick ? ["feed", "sleep", "play"] : [];
+  const lockedActions: CareAction[] = Array.from(new Set([...stageLockedActions, ...sickLockedActions]));
+  const isActionLocked = (action: CareAction) => lockedActions.includes(action);
+
   const runActivity = (action: FeedbackType) => {
+    if (action !== "pet" && isActionLocked(action)) {
+      return;
+    }
     if (action === "feed") {
       applyStatDelta({ hunger: 16, joy: 2 }, isSick ? 0 : 8);
       setCurrentScene("feed");
@@ -409,8 +520,21 @@ export function PetCard() {
       return;
     }
 
+    if (isActionLocked(action) && subId !== "star-elixir") {
+      return;
+    }
+
     if (subId === "star-elixir") {
-      void handleHeal();
+      if (!healCycle) {
+        const now = Date.now();
+        const treatment: HealCycleMeta = { startedAt: now, readyAt: now + HEAL_DURATION_MS };
+        setHealCycle(treatment);
+        localStorage.setItem(HEAL_CYCLE_STORAGE_KEY, JSON.stringify(treatment));
+      } else if (healIsReady) {
+        localStorage.removeItem(HEAL_CYCLE_STORAGE_KEY);
+        setHealCycle(null);
+        void handleHeal();
+      }
       return;
     }
 
@@ -449,7 +573,7 @@ export function PetCard() {
 
   return (
     <motion.section
-      className={`relative min-h-screen text-slate-800 ${!isReady && !hasStarted ? "opacity-0" : ""}`}
+      className={`relative min-h-screen text-slate-800 ${!isReady ? "opacity-0" : ""}`}
       initial={false}
       animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
       transition={{ duration: 0.7, ease: "easeInOut" }}
@@ -558,6 +682,7 @@ export function PetCard() {
           stage={pet.stage}
           activeAction={activeAction}
           isSick={isSick}
+          lockedActions={lockedActions}
           onDragPoint={onDragPoint}
           onDropPet={onDropPet}
           onSubDrop={onSubDrop}
@@ -636,8 +761,16 @@ export function PetCard() {
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
-            ? "Tap the egg or drag Pet onto it to build Bia Sync. The shell destabilizes as it gets closer to hatching."
-            : "Hover activities — drag a treat or toy onto your companion. Scene returns to Nursery."}
+            ? eggIsReadyByTime
+              ? "Egg is warm enough. Keep caring to trigger hatch."
+              : `Warming egg: ${Math.round(eggProgressPct)}% • Ready in ~${eggRemainingLabel}`
+            : isSick
+              ? healCycle
+                ? healIsReady
+                  ? "Healing complete. Drop Star Elixir to stabilize now."
+                  : `Healing in progress: ${Math.round(healProgressPct)}% • ~${healRemainingLabel} left`
+                : "Bia is sick. Use Star Elixir to begin treatment."
+              : "Drag activities onto your companion. More options unlock as Bia grows."}
           <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
             <Home size={12} className="opacity-80" />
             <span className="font-semibold">{sceneDisplayName(currentScene)}</span>

@@ -30,11 +30,11 @@ function eggTypeToTintFilter(eggType: EggType): string {
   // we can fine-tune for each egg.
   switch (eggType) {
     case "pink":
-      return "hue-rotate(-18deg) saturate(1.18) contrast(1.02)";
+      return "hue-rotate(46deg) saturate(1.12) contrast(1.02)";
     case "blue":
-      return "hue-rotate(122deg) saturate(1.15) contrast(1.02)";
+      return "hue-rotate(-58deg) saturate(1.2) contrast(1.03)";
     case "gold":
-      return "hue-rotate(55deg) saturate(1.25) contrast(1.05)";
+      return "hue-rotate(142deg) saturate(1.28) contrast(1.06)";
     default:
       return "";
   }

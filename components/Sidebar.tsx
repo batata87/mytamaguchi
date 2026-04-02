@@ -27,6 +27,7 @@ type SidebarProps = {
   stage: PetStage;
   activeAction: CareAction | null;
   isSick?: boolean;
+  lockedActions?: CareAction[];
   disabled?: boolean;
   onDragPoint: (point: { x: number; y: number }) => void;
   /** Drag-from-sidebar Pet tool (egg hatch / petting). */
@@ -105,6 +106,7 @@ function ActivityWithSubmenu({
   icon,
   muted,
   isSick,
+  lockedActions = [],
   activeAction,
   onDragPoint,
   onSubDrop,
@@ -116,6 +118,7 @@ function ActivityWithSubmenu({
   icon: ReactNode;
   muted: boolean;
   isSick: boolean;
+  lockedActions?: CareAction[];
   activeAction: CareAction | null;
   onDragPoint: SidebarProps["onDragPoint"];
   onSubDrop: SidebarProps["onSubDrop"];
@@ -123,10 +126,8 @@ function ActivityWithSubmenu({
   onCloseMenu: SidebarProps["onCloseMenu"];
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const subs =
-    isSick && (action === "feed" || action === "clean")
-      ? [...ACTIVITY_SUBMENUS[action], STAR_ELIXIR_ITEM]
-      : ACTIVITY_SUBMENUS[action];
+  const subs = isSick && action === "clean" ? [...ACTIVITY_SUBMENUS[action], STAR_ELIXIR_ITEM] : ACTIVITY_SUBMENUS[action];
+  const locked = lockedActions.includes(action);
   const open = activeAction === action;
 
   useEffect(() => {
@@ -148,9 +149,10 @@ function ActivityWithSubmenu({
     <div className="relative" ref={rootRef}>
       <button
         type="button"
+        disabled={locked}
         onClick={() => onToggleAction(action)}
         className={`flex h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center gap-1 rounded-2xl border shadow-sm backdrop-blur-sm transition ${
-          muted
+          muted || locked
             ? "border-white/15 bg-white/10 text-slate-500 opacity-70"
             : open
               ? "border-white/70 bg-white/22 text-white ring-2 ring-white/45"
@@ -207,6 +209,7 @@ export function Sidebar({
   stage,
   activeAction,
   isSick = false,
+  lockedActions = [],
   onDragPoint,
   onDropPet,
   onSubDrop,
@@ -274,6 +277,7 @@ export function Sidebar({
             icon={item.icon}
             muted={isEgg}
             isSick={isSick}
+            lockedActions={lockedActions}
             activeAction={activeAction}
             onDragPoint={onDragPoint}
             onSubDrop={onSubDrop}

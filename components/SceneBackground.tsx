@@ -129,7 +129,7 @@ export function SceneBackground({
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <motion.div
           key={gradientKey}
           className={`absolute inset-0 bg-gradient-to-b ${resolveSceneClass(currentScene)}`}
@@ -139,7 +139,7 @@ export function SceneBackground({
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
         />
       </AnimatePresence>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         {currentScene === "nursery" && (
           <motion.div
             key="scene-nursery"
