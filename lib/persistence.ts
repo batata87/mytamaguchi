@@ -1,7 +1,7 @@
 "use client";
 
 import type { EggType, PetState } from "@/lib/game";
-import { clampStat, deriveMood } from "@/lib/petMath";
+import { applyOfflineCatchUp, deriveMood } from "@/lib/petMath";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const PLAYER_ID_KEY = "bia-player-id-v1";
@@ -17,13 +17,6 @@ type DbPetRow = {
   stage: PetState["stage"];
   last_updated_at: string;
 };
-
-const OFFLINE_DECAY_PER_HOUR = {
-  hunger: 4,
-  energy: 3,
-  joy: 2,
-  hygiene: 2
-} as const;
 
 function getPlayerId(): string {
   if (typeof window === "undefined") {
@@ -71,21 +64,14 @@ function petToRow(pet: PetState): DbPetRow {
   };
 }
 
+/** Remote sync: same delta-time decay + offline safety floor as local storage. */
 export function applyOfflineDecay(pet: PetState, lastUpdatedAt: string, now = Date.now()): PetState {
   const lastUpdatedMs = new Date(lastUpdatedAt).getTime();
   if (!Number.isFinite(lastUpdatedMs)) {
     return pet;
   }
-
-  const elapsedHours = Math.max(0, (now - lastUpdatedMs) / 3_600_000);
-  const next: PetState = { ...pet };
-
-  next.hunger = clampStat(next.hunger - elapsedHours * OFFLINE_DECAY_PER_HOUR.hunger);
-  next.energy = clampStat(next.energy - elapsedHours * OFFLINE_DECAY_PER_HOUR.energy);
-  next.joy = clampStat(next.joy - elapsedHours * OFFLINE_DECAY_PER_HOUR.joy);
-  next.hygiene = clampStat(next.hygiene - elapsedHours * OFFLINE_DECAY_PER_HOUR.hygiene);
-  next.status = deriveMood(next);
-  return next;
+  const elapsedMs = Math.max(0, now - lastUpdatedMs);
+  return applyOfflineCatchUp(pet, elapsedMs);
 }
 
 export async function saveGameState(pet: PetState): Promise<void> {

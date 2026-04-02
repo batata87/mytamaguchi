@@ -35,3 +35,19 @@ export const ACTIVITY_SUBMENUS: Record<"feed" | "sleep" | "play" | "clean", SubI
 };
 
 export type CareAction = "feed" | "sleep" | "play" | "clean";
+
+export type CravingPick = {
+  action: CareAction;
+  id: string;
+  label: string;
+  emoji: string;
+};
+
+/** Random micro-craving for emotional "I want this now" moments. */
+export function randomCravingPick(): CravingPick {
+  const actions: CareAction[] = ["feed", "sleep", "play", "clean"];
+  const action = actions[Math.floor(Math.random() * actions.length)]!;
+  const list = ACTIVITY_SUBMENUS[action];
+  const item = list[Math.floor(Math.random() * list.length)]!;
+  return { action, id: item.id, label: item.label, emoji: item.emoji };
+}

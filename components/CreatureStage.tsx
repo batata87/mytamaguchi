@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
@@ -7,11 +8,26 @@ import type { EggType, PetMood, PetStage } from "@/lib/game";
 
 type ActivityReaction = "feed" | "sleep" | "play" | "clean" | null;
 
+export type ActiveCraving = {
+  label: string;
+  emoji: string;
+  expiresAt: number;
+} | null;
+
 type CreatureStageProps = {
   stage: PetStage;
   hatchPhase: "idle" | "shake" | "flash";
   mood: PetMood;
   eggType: EggType;
+  hunger: number;
+  /** Hunger low: lean toward feed / "puppy eyes" plea */
+  pleadForFood: boolean;
+  craving: ActiveCraving;
+  careStyleLabel: string;
+  /** Increment to replay a one-shot happy dance (e.g. craving fulfilled). */
+  happyDanceNonce: number;
+  /** When > 0, one-shot “reunion” rush toward the player after a long absence. */
+  reunionPlayKey: number;
   onPet: () => void;
   petJumpKey: number;
   isExcited: boolean;
@@ -200,11 +216,73 @@ function ReactionOverlay({ activityReaction }: { activityReaction: ActivityReact
   );
 }
 
+function PleadingOverlay({ active, hunger }: { active: boolean; hunger: number }) {
+  if (!active) {
+    return null;
+  }
+  const urgency = Math.max(0, Math.min(1, (20 - hunger) / 20));
+  return (
+    <>
+      <motion.div
+        className="pointer-events-none absolute -right-2 top-[8%] z-30 flex flex-col items-end gap-0.5 sm:right-0 sm:top-[10%]"
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.35 }}
+      >
+        <span className="text-[10px] font-bold uppercase tracking-wide text-rose-100/90 drop-shadow">Feed</span>
+        <motion.span
+          className="text-lg"
+          animate={{ x: [0, 4 + urgency * 2, 0], y: [0, 2, 0] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+          aria-hidden
+        >
+          🍒
+        </motion.span>
+      </motion.div>
+      <div
+        className="pointer-events-none absolute left-1/2 top-[12%] z-30 flex items-center gap-1 rounded-full border border-white/35 bg-white/20 px-2 py-0.5 text-lg shadow-lg backdrop-blur-sm"
+        aria-hidden
+        style={{ transform: `translateX(-50%) scale(${1 + urgency * 0.08})` }}
+      >
+        <span>🥺</span>
+      </div>
+    </>
+  );
+}
+
+function CravingBubble({ craving, now }: { craving: NonNullable<ActiveCraving>; now: number }) {
+  const leftMs = Math.max(0, craving.expiresAt - now);
+  const secs = Math.ceil(leftMs / 1000);
+  return (
+    <motion.div
+      className="pointer-events-none absolute left-1/2 top-0 z-40 -translate-x-1/2 -translate-y-full px-2"
+      initial={{ opacity: 0, y: 6, scale: 0.92 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -4 }}
+    >
+      <div className="relative rounded-2xl border border-amber-200/50 bg-amber-50/95 px-3 py-2 text-center shadow-lg">
+        <p className="text-[9px] font-bold uppercase tracking-wide text-amber-900/80">Craving</p>
+        <p className="text-sm font-semibold text-amber-950">
+          {craving.emoji} {craving.label}
+        </p>
+        <p className="text-[10px] text-amber-900/70">{secs}s</p>
+        <div className="absolute -bottom-1.5 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-amber-200/50 bg-amber-50/95" />
+      </div>
+    </motion.div>
+  );
+}
+
 export function CreatureStage({
   stage,
   hatchPhase,
   mood,
   eggType,
+  hunger,
+  pleadForFood,
+  craving,
+  careStyleLabel,
+  happyDanceNonce,
+  reunionPlayKey,
   onPet,
   petJumpKey,
   isExcited,
@@ -231,6 +309,14 @@ export function CreatureStage({
   }
 
   const creatureFilter = creatureFilterParts.length ? creatureFilterParts.join(" ") : undefined;
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (!craving) {
+      return;
+    }
+    const id = window.setInterval(() => setNowTick(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [craving]);
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
@@ -239,13 +325,37 @@ export function CreatureStage({
         animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
       />
+      {stage !== "egg" && !isSick && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center">
+          <AnimatePresence>
+            {craving && <CravingBubble craving={craving} now={nowTick} key="craving" />}
+          </AnimatePresence>
+        </div>
+      )}
+      {stage !== "egg" && careStyleLabel && (
+        <div className="pointer-events-none absolute bottom-0 left-1/2 z-30 -translate-x-1/2 translate-y-full pb-1 text-center">
+          <span className="rounded-full border border-white/25 bg-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white/85 shadow-sm backdrop-blur-sm">
+            {careStyleLabel}
+          </span>
+        </div>
+      )}
       <motion.button
         onClick={onPet}
         className="relative -mt-2 flex items-center justify-center"
         style={{
           filter: creatureFilter
         }}
+        animate={pleadForFood ? { rotate: -5 } : { rotate: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
       >
+        <motion.div
+          key={reunionPlayKey > 0 ? `reunion-${reunionPlayKey}` : "idle"}
+          initial={reunionPlayKey > 0 ? { scale: 0.68, y: 100, opacity: 0.72 } : false}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 340, damping: 19, mass: 0.62 }}
+          className="flex items-center justify-center"
+          style={{ transformOrigin: "50% 60%" }}
+        >
         <motion.div
           initial={false}
           animate={healPulseKey ? { scale: [1, 1.12, 0.98, 1], y: [0, -4, 0] } : petJumpKey ? { y: [0, -20, 0] } : { y: 0 }}
@@ -272,26 +382,40 @@ export function CreatureStage({
               className={`relative ${mood === "blissful" ? "drop-shadow-[0_0_22px_rgba(251,191,36,0.75)]" : ""}`}
               animate={isExcited ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] } : "idle"}
             >
+              <PleadingOverlay active={pleadForFood && !isSick} hunger={hunger} />
               <ReactionOverlay activityReaction={activityReaction} />
-              <AnimatePresence mode="sync" initial={false}>
-                <motion.div
-                  key={`${stage}-${isSick ? "sick" : "well"}-${useDefaultBabyAsset ? "default" : "evo"}`}
-                  initial={{ opacity: 0, scale: 0.94, y: 8 }}
-                  animate={isNearDrop ? { opacity: 1, scale: [1, 1.08, 1.02], y: [0, -4, 0] } : { opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 1.04, y: -6 }}
-                  transition={{ duration: 0.55, ease: "easeInOut" }}
-                >
-                  {isSick ? (
-                    <SickCreatureArt />
-                  ) : stage === "baby" && useDefaultBabyAsset ? (
-                    <DefaultBabyArt />
-                  ) : (
-                    <CreatureSprite stage={stage} />
-                  )}
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                key={happyDanceNonce}
+                className="relative"
+                initial={happyDanceNonce === 0 ? false : { rotate: 0, scale: 1 }}
+                animate={
+                  happyDanceNonce > 0
+                    ? { rotate: [0, -14, 14, -10, 10, 0], scale: [1, 1.12, 1.06, 1.1, 1] }
+                    : { rotate: 0, scale: 1 }
+                }
+                transition={{ duration: 0.85, ease: "easeInOut" }}
+              >
+                <AnimatePresence mode="sync" initial={false}>
+                  <motion.div
+                    key={`${stage}-${isSick ? "sick" : "well"}-${useDefaultBabyAsset ? "default" : "evo"}`}
+                    initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                    animate={isNearDrop ? { opacity: 1, scale: [1, 1.08, 1.02], y: [0, -4, 0] } : { opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 1.04, y: -6 }}
+                    transition={{ duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
+                  >
+                    {isSick ? (
+                      <SickCreatureArt />
+                    ) : stage === "baby" && useDefaultBabyAsset ? (
+                      <DefaultBabyArt />
+                    ) : (
+                      <CreatureSprite stage={stage} />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </motion.div>
             </motion.div>
           )}
+        </motion.div>
         </motion.div>
       </motion.button>
     </div>

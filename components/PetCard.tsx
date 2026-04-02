@@ -2,19 +2,30 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Home } from "lucide-react";
+import { Bell, BellOff, BookHeart, Home } from "lucide-react";
 import { ChooseEggScreen } from "@/components/ChooseEggScreen";
 import { CreatureStage } from "@/components/CreatureStage";
 import { GrowthJourney } from "@/components/GrowthJourney";
 import { MoodAura } from "@/components/MoodAura";
 import { Sidebar } from "@/components/Sidebar";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { MemoryBook } from "@/components/MemoryBook";
 import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
+import { randomCravingPick } from "@/lib/activitySubmenus";
+import {
+  careStyleLabel,
+  deriveCareStyle,
+  loadPlayerMeta,
+  savePlayerMeta,
+  todayYmd,
+  type PlayerMeta
+} from "@/lib/playerMeta";
 import { XP_HATCH_TARGET } from "@/lib/stageProgress";
+import { useHungerNotification } from "@/hooks/useHungerNotification";
 import { useInterval } from "@/hooks/useInterval";
-import { usePetEngine } from "@/hooks/usePetEngine";
+import { usePetEngine, WELCOME_BACK_MIN_ABSENCE_MS } from "@/hooks/usePetEngine";
 
 type StatKey = "hunger" | "energy" | "joy" | "hygiene";
 type FeedbackType = "feed" | "sleep" | "play" | "clean" | "pet";
@@ -76,9 +87,38 @@ export function PetCard() {
     void triggerSchoolPrideBurst();
   }, []);
 
-  const { pet, isReady, needsEggChoice, currentMood, isSick, tickDecay, applyStatDelta, setStage, createPet, healPet, renamePet } = usePetEngine({
+  const {
+    pet,
+    isReady,
+    needsEggChoice,
+    welcomeBackAbsentMs,
+    clearWelcomeBack,
+    currentMood,
+    isSick,
+    tickDecay,
+    applyStatDelta,
+    setStage,
+    createPet,
+    healPet,
+    renamePet
+  } = usePetEngine({
     onEvolution,
     onXpMilestone
+  });
+
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    if (typeof Notification !== "undefined") {
+      setNotifPerm(Notification.permission);
+    }
+  }, []);
+
+  useHungerNotification({
+    pet,
+    isReady,
+    needsEggChoice,
+    notificationPermission: notifPerm
   });
 
   const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
@@ -112,7 +152,101 @@ export function PetCard() {
   const activityReactionTimerRef = useRef<number | null>(null);
   const ambientAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  useInterval(tickDecay, 60_000);
+  const [playerMeta, setPlayerMeta] = useState<PlayerMeta>(() => loadPlayerMeta());
+  const [craving, setCraving] = useState<{
+    action: CareAction;
+    id: string;
+    label: string;
+    emoji: string;
+    expiresAt: number;
+  } | null>(null);
+  const [happyDanceNonce, setHappyDanceNonce] = useState(0);
+  const [memoryBookOpen, setMemoryBookOpen] = useState(false);
+  const [dailyToast, setDailyToast] = useState<string | null>(null);
+  const [reunionPlayKey, setReunionPlayKey] = useState(0);
+  const reunionConsumedRef = useRef(false);
+
+  useInterval(() => {
+    const foreground = typeof document !== "undefined" && !document.hidden && isPageVisible;
+    tickDecay(foreground);
+  }, 60_000);
+
+  /**
+   * Welcome back (4h+ away): reunion animation + confetti, then daily login stardust when eligible.
+   * Single effect avoids Strict Mode double-handshake between two effects.
+   */
+  useEffect(() => {
+    if (!hasStarted || !isReady || needsEggChoice) {
+      return;
+    }
+
+    const shouldReunite =
+      welcomeBackAbsentMs != null &&
+      welcomeBackAbsentMs >= WELCOME_BACK_MIN_ABSENCE_MS &&
+      !reunionConsumedRef.current;
+    const reunited = shouldReunite;
+    if (shouldReunite) {
+      reunionConsumedRef.current = true;
+      setReunionPlayKey((k) => k + 1);
+      void triggerSchoolPrideBurst();
+      clearWelcomeBack();
+    }
+
+    const meta = loadPlayerMeta();
+    const today = todayYmd();
+
+    if (meta.lastDailyGiftYmd === today) {
+      if (reunited) {
+        setDailyToast("Welcome back! Bia missed you ✨");
+        const t = window.setTimeout(() => setDailyToast(null), 8000);
+        return () => window.clearTimeout(t);
+      }
+      return;
+    }
+
+    const next = { ...meta, lastDailyGiftYmd: today, stardust: meta.stardust + 8 };
+    savePlayerMeta(next);
+    setPlayerMeta(next);
+    applyStatDelta({ joy: 6 }, 5);
+    setDailyToast(
+      reunited
+        ? "Welcome back! Daily login: +8 stardust — thanks for coming home ✨"
+        : "Daily login: +8 stardust ✨"
+    );
+    const t = window.setTimeout(() => setDailyToast(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [hasStarted, isReady, needsEggChoice, welcomeBackAbsentMs, clearWelcomeBack, applyStatDelta]);
+
+  useEffect(() => {
+    if (!hasStarted || !isReady || pet.stage === "egg" || needsEggChoice) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      setCraving((c) => {
+        if (c && Date.now() < c.expiresAt) {
+          return c;
+        }
+        if (c && Date.now() >= c.expiresAt) {
+          return null;
+        }
+        if (Math.random() < 0.28) {
+          const pick = randomCravingPick();
+          return { ...pick, expiresAt: Date.now() + 60_000 };
+        }
+        return null;
+      });
+    }, 40_000);
+    return () => window.clearInterval(id);
+  }, [hasStarted, isReady, pet.stage, needsEggChoice]);
+
+  useEffect(() => {
+    if (!craving) {
+      return;
+    }
+    const left = Math.max(0, craving.expiresAt - Date.now());
+    const t = window.setTimeout(() => setCraving(null), left);
+    return () => window.clearTimeout(t);
+  }, [craving]);
 
   useEffect(() => {
     if (currentScene === "nursery") {
@@ -350,6 +484,11 @@ export function PetCard() {
     applyStatDelta({ joy: 3 }, 1);
     spawnParticle("pet");
     triggerBiaPulse();
+    setPlayerMeta((m) => {
+      const next = { ...m, carePetCount: m.carePetCount + 1 };
+      savePlayerMeta(next);
+      return next;
+    });
   };
 
   const triggerPetJump = () => {
@@ -609,8 +748,38 @@ export function PetCard() {
       return;
     }
 
+    const memoryKey = `${action}:${subId}:${currentScene}`;
+    const cravingMatch =
+      craving &&
+      action === craving.action &&
+      subId === craving.id &&
+      Date.now() <= craving.expiresAt;
+
+    if (cravingMatch) {
+      setCraving(null);
+      setHappyDanceNonce((n) => n + 1);
+    }
+
+    setPlayerMeta((m) => {
+      let next = { ...m };
+      if (!next.memoryKeys.includes(memoryKey)) {
+        next = { ...next, memoryKeys: [...next.memoryKeys, memoryKey] };
+      }
+      if (action === "feed") {
+        next = { ...next, careFeedCount: next.careFeedCount + 1 };
+      }
+      if (action === "play") {
+        next = { ...next, carePlayCount: next.carePlayCount + 1 };
+      }
+      savePlayerMeta(next);
+      return next;
+    });
+
     void triggerSchoolPrideBurst();
     runActivity(action);
+    if (cravingMatch) {
+      applyStatDelta({ joy: 22 }, 28);
+    }
     setPetJumpKey((prev) => prev + 1);
     window.setTimeout(() => {
       setActiveAction(null);
@@ -645,6 +814,13 @@ export function PetCard() {
     }
   }, [pet.stage, hatchPhase]);
 
+  const careStylePill = careStyleLabel(deriveCareStyle(playerMeta));
+  const cravingForStage =
+    craving && pet.stage !== "egg"
+      ? { label: craving.label, emoji: craving.emoji, expiresAt: craving.expiresAt }
+      : null;
+  const pleadForFood = pet.hunger <= 20 && pet.stage !== "egg" && !isSick;
+
   return (
     <motion.section
       className={`relative min-h-screen text-slate-800 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
@@ -657,36 +833,76 @@ export function PetCard() {
       {!shouldHideMain && (
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2 sm:px-3 sm:pt-3">
           <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/40 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md sm:px-3 sm:py-3.5">
-          <div className="mb-1 flex items-center justify-center">
-            {isRenaming ? (
-              <input
-                ref={renameInputRef}
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value.slice(0, 24))}
-                onBlur={() => void commitRename()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void commitRename();
+          <div className="mb-1 grid grid-cols-[2rem_1fr_2rem] items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setMemoryBookOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35"
+              aria-label="Open memory book"
+            >
+              <BookHeart className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <div className="flex justify-center">
+              {isRenaming ? (
+                <input
+                  ref={renameInputRef}
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value.slice(0, 24))}
+                  onBlur={() => void commitRename()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void commitRename();
+                    }
+                    if (event.key === "Escape") {
+                      setIsRenaming(false);
+                      setDraftName(pet.name);
+                    }
+                  }}
+                  aria-label="Rename creature"
+                  className="w-40 rounded-full border border-white/50 bg-white/75 px-3 py-1 text-center text-[13px] font-bold leading-tight tracking-tight text-slate-800 outline-none ring-0"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsRenaming(true)}
+                  className="rounded-full px-3 py-1 text-[13px] font-bold leading-tight tracking-tight text-slate-800 transition hover:bg-white/25"
+                  aria-label="Rename creature"
+                >
+                  {pet.name}
+                </button>
+              )}
+            </div>
+            <div className="flex w-8 justify-end">
+              {typeof Notification !== "undefined" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void Notification.requestPermission().then((r) => setNotifPerm(r));
+                  }}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700/90 transition hover:bg-white/35 disabled:opacity-40"
+                  title={
+                    notifPerm === "granted"
+                      ? "Hunger reminders on"
+                      : notifPerm === "denied"
+                        ? "Notifications blocked in browser settings"
+                        : "Enable hunger reminders"
                   }
-                  if (event.key === "Escape") {
-                    setIsRenaming(false);
-                    setDraftName(pet.name);
+                  aria-label={
+                    notifPerm === "granted"
+                      ? "Hunger reminders enabled"
+                      : "Enable hunger reminder notifications"
                   }
-                }}
-                aria-label="Rename creature"
-                className="w-40 rounded-full border border-white/50 bg-white/75 px-3 py-1 text-center text-[13px] font-bold leading-tight tracking-tight text-slate-800 outline-none ring-0"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsRenaming(true)}
-                className="rounded-full px-3 py-1 text-[13px] font-bold leading-tight tracking-tight text-slate-800 transition hover:bg-white/25"
-                aria-label="Rename creature"
-              >
-                {pet.name}
-              </button>
-            )}
+                  disabled={notifPerm === "denied"}
+                >
+                  {notifPerm === "denied" ? (
+                    <BellOff className="h-4 w-4" strokeWidth={2} />
+                  ) : (
+                    <Bell className="h-4 w-4" strokeWidth={2} />
+                  )}
+                </button>
+              )}
+            </div>
           </div>
 
           <GrowthJourney stage={pet.stage} bond={pet.xp} />
@@ -735,6 +951,12 @@ export function PetCard() {
                 hatchPhase={hatchPhase}
                 mood={currentMood}
                 eggType={pet.eggType}
+                hunger={pet.hunger}
+                pleadForFood={pleadForFood}
+                craving={cravingForStage}
+                careStyleLabel={careStylePill}
+                happyDanceNonce={happyDanceNonce}
+                reunionPlayKey={reunionPlayKey}
                 onPet={triggerPetJump}
                 petJumpKey={petJumpKey}
                 isExcited={anticipationState !== "idle"}
@@ -831,6 +1053,29 @@ export function PetCard() {
           </motion.div>
         ))}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {dailyToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-[55] mx-auto max-w-[min(100%,480px)] px-4 text-center"
+          >
+            <div className="rounded-2xl border border-white/40 bg-white/85 px-3 py-2 text-[11px] font-semibold leading-snug text-slate-800 shadow-lg backdrop-blur-sm">
+              {dailyToast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <MemoryBook
+        open={memoryBookOpen}
+        onClose={() => setMemoryBookOpen(false)}
+        memoryKeys={playerMeta.memoryKeys}
+        stardust={playerMeta.stardust}
+      />
 
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.2rem)] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">

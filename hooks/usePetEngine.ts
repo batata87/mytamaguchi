@@ -4,17 +4,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { initialPetState, PET_STORAGE_KEY, type EggType, type PetState, type PetStage } from "@/lib/game";
 import { loadGameState, saveGameState, applyOfflineDecay } from "@/lib/persistence";
 import {
-  applyDecayForMinutes,
+  applyDecayForMinutesScaled,
+  applyOfflineCatchUp,
+  BACKGROUND_DECAY_SCALE,
   calculateEvolution,
   clampStat,
   deriveMood,
+  FOREGROUND_DECAY_SCALE,
   getCrossedXpMilestones
 } from "@/lib/petMath";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 type StoredPayload = {
   pet: PetState;
-  lastSyncAt: number;
+  /** Wall-clock ms when the pet state was last persisted (delta-time anchor). */
+  lastSeenAt: number;
+  /** @deprecated Legacy key — migrated to lastSeenAt on read. */
+  lastSyncAt?: number;
 };
 
 function normalizePet(partial: PetState): PetState {
@@ -42,25 +48,26 @@ function loadStored(): StoredPayload | null {
     if (!raw) {
       return null;
     }
-    return JSON.parse(raw) as StoredPayload;
+    const parsed = JSON.parse(raw) as StoredPayload;
+    const lastSeenAt =
+      typeof parsed.lastSeenAt === "number" && Number.isFinite(parsed.lastSeenAt)
+        ? parsed.lastSeenAt
+        : typeof parsed.lastSyncAt === "number" && Number.isFinite(parsed.lastSyncAt)
+          ? parsed.lastSyncAt
+          : Date.now();
+    return { pet: parsed.pet, lastSeenAt };
   } catch {
     return null;
   }
 }
 
-function saveStored(pet: PetState, lastSyncAt: number) {
+function saveStored(pet: PetState, lastSeenAt: number) {
   if (typeof window === "undefined") {
     return;
   }
 
-  const payload: StoredPayload = { pet, lastSyncAt };
+  const payload: StoredPayload = { pet, lastSeenAt };
   localStorage.setItem(PET_STORAGE_KEY, JSON.stringify(payload));
-}
-
-export function calculateOfflineProgress(pet: PetState, lastSyncAt: number, now: number): PetState {
-  const elapsedMs = Math.max(0, now - lastSyncAt);
-  const minutes = elapsedMs / 60_000;
-  return applyDecayForMinutes(pet, minutes);
 }
 
 function withSyncedStatus(p: PetState): PetState {
@@ -82,12 +89,16 @@ export type UsePetEngineOptions = {
   onXpMilestone?: (milestone: 1500 | 5000 | 12000) => void;
 };
 
+/** Wall-clock absence before we treat return as a "welcome back" reunion (not just low bars). */
+export const WELCOME_BACK_MIN_ABSENCE_MS = 4 * 60 * 60 * 1000;
+
 export function usePetEngine(options: UsePetEngineOptions = {}) {
   const { onEvolution, onXpMilestone } = options;
 
   const [pet, setPet] = useState<PetState>(() => withSyncedStatus(initialPetState));
   const [isReady, setIsReady] = useState(false);
   const [needsEggChoice, setNeedsEggChoice] = useState(false);
+  const [welcomeBackAbsentMs, setWelcomeBackAbsentMs] = useState<number | null>(null);
   const petRef = useRef(pet);
 
   useEffect(() => {
@@ -107,22 +118,35 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
         return;
       }
 
+      let welcomeAbsence: number | null = null;
+
       if (remote) {
+        const lastRemoteMs = new Date(remote.lastUpdatedAt).getTime();
+        const elapsedRemote = Number.isFinite(lastRemoteMs) ? Math.max(0, now - lastRemoteMs) : 0;
+        if (elapsedRemote >= WELCOME_BACK_MIN_ABSENCE_MS) {
+          welcomeAbsence = elapsedRemote;
+        }
         const offlinePet = applyOfflineDecay(normalizePet(remote.pet), remote.lastUpdatedAt, now);
         const synced = withSyncedStatus(withEvolution(offlinePet));
         setPet(synced);
         saveStored(synced, now);
         setNeedsEggChoice(false);
+        setWelcomeBackAbsentMs(welcomeAbsence);
         setIsReady(true);
         return;
       }
 
       if (stored) {
-        const offlinePet = calculateOfflineProgress(normalizePet(stored.pet), stored.lastSyncAt, now);
+        const elapsedMs = Math.max(0, now - stored.lastSeenAt);
+        if (elapsedMs >= WELCOME_BACK_MIN_ABSENCE_MS) {
+          welcomeAbsence = elapsedMs;
+        }
+        const offlinePet = applyOfflineCatchUp(normalizePet(stored.pet), elapsedMs);
         const synced = withSyncedStatus(withEvolution(offlinePet));
         setPet(synced);
         saveStored(synced, now);
         setNeedsEggChoice(false);
+        setWelcomeBackAbsentMs(welcomeAbsence);
         setIsReady(true);
         return;
       }
@@ -130,6 +154,7 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
       const fresh = withSyncedStatus(initialPetState);
       setPet(fresh);
       setNeedsEggChoice(true);
+      setWelcomeBackAbsentMs(null);
       setIsReady(true);
       if (!isSupabaseConfigured()) {
         saveStored(fresh, now);
@@ -146,9 +171,15 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
   const currentMood = useMemo(() => deriveMood(pet), [pet]);
   const isSick = useMemo(() => hasSicknessState({ ...pet, status: currentMood }), [pet, currentMood]);
 
-  const tickDecay = useCallback(() => {
+  /** When `foreground` is true, stats drop faster (player is engaged). When false, minimal decay. */
+  const clearWelcomeBack = useCallback(() => {
+    setWelcomeBackAbsentMs(null);
+  }, []);
+
+  const tickDecay = useCallback((foreground: boolean) => {
+    const scale = foreground ? FOREGROUND_DECAY_SCALE : BACKGROUND_DECAY_SCALE;
     setPet((prev) => {
-      const decayed = applyDecayForMinutes(prev, 1);
+      const decayed = applyDecayForMinutesScaled(prev, 1, scale);
       const evolved = withEvolution(decayed);
       const synced = withSyncedStatus(evolved);
       saveStored(synced, Date.now());
@@ -227,6 +258,32 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     return () => window.clearInterval(timer);
   }, [isReady, needsEggChoice]);
 
+  /** Persist last_seen_timestamp when the tab hides or unloads (no background game loop). */
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    const flushLastSeen = () => {
+      saveStored(petRef.current, Date.now());
+      void saveGameState(petRef.current);
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        flushLastSeen();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flushLastSeen);
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flushLastSeen);
+    };
+  }, [isReady]);
+
   const createPet = useCallback(async (eggType: EggType) => {
     const next = withSyncedStatus({
       ...initialPetState,
@@ -289,6 +346,8 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     pet,
     isReady,
     needsEggChoice,
+    welcomeBackAbsentMs,
+    clearWelcomeBack,
     currentMood,
     isSick,
     tickDecay,
