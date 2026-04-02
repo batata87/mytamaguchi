@@ -75,6 +75,7 @@ export function PetCard() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
+  const shouldHideMain = !isReady || (hasStarted && needsEggChoice);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [activityReaction, setActivityReaction] = useState<ActivityReaction>(null);
@@ -455,8 +456,9 @@ export function PetCard() {
     >
       <SceneBackground currentScene={currentScene} mood={currentMood} isSick={isSick} />
 
-      <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2.5 sm:px-3 sm:pt-3">
-        <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
+      {!shouldHideMain && (
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2.5 sm:px-3 sm:pt-3">
+          <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/42 px-3 py-3.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md">
           <div className="mb-1 flex items-center justify-center">
             {isRenaming ? (
               <input
@@ -515,49 +517,55 @@ export function PetCard() {
               </div>
             ))}
           </div>
-        </div>
-      </header>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="creature-stage"
-          initial={{ opacity: 0.88 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0.88 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
-          className="pointer-events-none fixed inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
-        >
-          <div ref={creatureRef} className="pointer-events-auto h-[170px] w-[170px] sm:h-[280px] sm:w-[280px]">
-            <CreatureStage
-              stage={pet.stage}
-              hatchPhase={hatchPhase}
-              mood={currentMood}
-              onPet={triggerPetJump}
-              petJumpKey={petJumpKey}
-              isExcited={anticipationState !== "idle"}
-              isNearDrop={anticipationState === "near"}
-              eggAsset={currentEggAsset}
-              eggShouldWobble={eggShouldWobble}
-              useDefaultBabyAsset={useDefaultBabyAsset}
-              isSick={isSick}
-              healPulseKey={healPulseKey}
-              activityReaction={activityReaction}
-            />
           </div>
-        </motion.div>
-      </AnimatePresence>
+        </header>
+      )}
 
-      <Sidebar
-        stage={pet.stage}
-        activeAction={activeAction}
-        isSick={isSick}
-        onDragPoint={onDragPoint}
-        onDropPet={onDropPet}
-        onSubDrop={onSubDrop}
-        onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
-        onCloseMenu={() => setActiveAction(null)}
-        disabled={inputsLocked}
-      />
+      {!shouldHideMain && (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key="creature-stage"
+            initial={{ opacity: 0.88 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0.88 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+            className="pointer-events-none fixed inset-x-0 top-[60%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+          >
+            <div ref={creatureRef} className="pointer-events-auto h-[170px] w-[170px] sm:h-[280px] sm:w-[280px]">
+              <CreatureStage
+                stage={pet.stage}
+                hatchPhase={hatchPhase}
+                mood={currentMood}
+                eggType={pet.eggType}
+                onPet={triggerPetJump}
+                petJumpKey={petJumpKey}
+                isExcited={anticipationState !== "idle"}
+                isNearDrop={anticipationState === "near"}
+                eggAsset={currentEggAsset}
+                eggShouldWobble={eggShouldWobble}
+                useDefaultBabyAsset={useDefaultBabyAsset}
+                isSick={isSick}
+                healPulseKey={healPulseKey}
+                activityReaction={activityReaction}
+              />
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      )}
+
+      {!shouldHideMain && (
+        <Sidebar
+          stage={pet.stage}
+          activeAction={activeAction}
+          isSick={isSick}
+          onDragPoint={onDragPoint}
+          onDropPet={onDropPet}
+          onSubDrop={onSubDrop}
+          onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
+          onCloseMenu={() => setActiveAction(null)}
+          disabled={inputsLocked}
+        />
+      )}
 
       <AnimatePresence>
         {showFlash && (
@@ -640,7 +648,9 @@ export function PetCard() {
         {!hasStarted && <WelcomeScreen onStart={beginExperience} isLeaving={isStarting} isReady={isReady} />}
       </AnimatePresence>
 
-      <AnimatePresence>{hasStarted && needsEggChoice && <ChooseEggScreen onChoose={chooseEgg} />}</AnimatePresence>
+      <AnimatePresence>
+        {hasStarted && isReady && needsEggChoice && <ChooseEggScreen onChoose={chooseEgg} />}
+      </AnimatePresence>
     </motion.section>
   );
 }

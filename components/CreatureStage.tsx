@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
-import type { PetMood, PetStage } from "@/lib/game";
+import type { EggType, PetMood, PetStage } from "@/lib/game";
 
 type ActivityReaction = "feed" | "sleep" | "play" | "clean" | null;
 
@@ -11,6 +11,7 @@ type CreatureStageProps = {
   stage: PetStage;
   hatchPhase: "idle" | "shake" | "flash";
   mood: PetMood;
+  eggType: EggType;
   onPet: () => void;
   petJumpKey: number;
   isExcited: boolean;
@@ -22,6 +23,22 @@ type CreatureStageProps = {
   healPulseKey: number;
   activityReaction: ActivityReaction;
 };
+
+function eggTypeToTintFilter(eggType: EggType): string {
+  // We recolor the existing purple art via hue rotation.
+  // These values are tuned for the current asset set; if you provide specific egg reference renders,
+  // we can fine-tune for each egg.
+  switch (eggType) {
+    case "pink":
+      return "hue-rotate(-18deg) saturate(1.18) contrast(1.02)";
+    case "blue":
+      return "hue-rotate(122deg) saturate(1.15) contrast(1.02)";
+    case "gold":
+      return "hue-rotate(55deg) saturate(1.25) contrast(1.05)";
+    default:
+      return "";
+  }
+}
 
 function breatheVariantsForMood(mood: PetMood): Variants {
   const fast = mood === "blissful";
@@ -187,6 +204,7 @@ export function CreatureStage({
   stage,
   hatchPhase,
   mood,
+  eggType,
   onPet,
   petJumpKey,
   isExcited,
@@ -200,11 +218,19 @@ export function CreatureStage({
 }: CreatureStageProps) {
   const breatheVariants = breatheVariantsForMood(mood);
   const breatheDuration = isSick ? 4.8 : mood === "blissful" ? 1.4 : 2.4;
-  const creatureFilter = isSick
-    ? "grayscale(0.8) contrast(1.2)"
-    : mood === "distressed"
-      ? "saturate(0.75) brightness(0.96)"
-      : undefined;
+  const creatureFilterParts: string[] = [];
+
+  if (isSick) {
+    // Sick art swaps out, but we keep this for safety if any layer still uses the base sprite.
+    creatureFilterParts.push("grayscale(0.8) contrast(1.2)");
+  } else {
+    const moodFilter = mood === "distressed" ? "saturate(0.75) brightness(0.96)" : "";
+    const tintFilter = eggTypeToTintFilter(eggType);
+    if (moodFilter) creatureFilterParts.push(moodFilter);
+    if (tintFilter) creatureFilterParts.push(tintFilter);
+  }
+
+  const creatureFilter = creatureFilterParts.length ? creatureFilterParts.join(" ") : undefined;
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-2 sm:px-4">
