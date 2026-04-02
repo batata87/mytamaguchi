@@ -44,6 +44,14 @@ const careActions: Array<{ action: CareAction; label: string; icon: ReactNode }>
   { action: "clean", label: "Clean", icon: <BrushCleaning size={24} strokeWidth={1.9} /> }
 ];
 
+/** Gentle inertia + spring snap-back — feels soft, not a rigid button. */
+const tactileDragProps = {
+  dragMomentum: true,
+  dragElastic: 0.14,
+  dragSnapToOrigin: true,
+  dragTransition: { bounceStiffness: 150, bounceDamping: 17, power: 0.1 }
+} as const;
+
 const subItemIconMap: Record<string, ReactNode> = {
   berries: <Cherry size={18} strokeWidth={1.9} />,
   mooncake: <CircleDot size={18} strokeWidth={1.9} />,
@@ -84,10 +92,8 @@ function DraggablePetTool({
     <motion.button
       drag
       dragListener
-      dragMomentum={false}
-      dragSnapToOrigin
-      whileDrag={{ scale: 1.08 }}
-      dragTransition={{ power: 0, timeConstant: 120 }}
+      {...tactileDragProps}
+      whileDrag={{ scale: 1.08, zIndex: 50 }}
       onDrag={(_, info: PanInfo) => onDragPoint(info.point)}
       onDragEnd={(_, info: PanInfo) => onDropPet(info.point)}
       className={`${base} touch-none`}
@@ -182,10 +188,8 @@ function ActivityWithSubmenu({
                 key={sub.id}
                 drag
                 dragListener
-                dragMomentum={false}
-                dragSnapToOrigin
-                whileDrag={{ scale: 1.05, zIndex: 70 }}
-                dragTransition={{ power: 0, timeConstant: 120 }}
+                {...tactileDragProps}
+                whileDrag={{ scale: 1.06, zIndex: 70 }}
                 onDrag={(_, info: PanInfo) => onDragPoint(info.point)}
                 onDragEnd={(_, info: PanInfo) => onSubDrop(action, sub.id, info.point)}
                 type="button"

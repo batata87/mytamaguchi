@@ -22,6 +22,7 @@ import {
   todayYmd,
   type PlayerMeta
 } from "@/lib/playerMeta";
+import { playPetPurrHaptic } from "@/lib/haptics";
 import { XP_HATCH_TARGET } from "@/lib/stageProgress";
 import { useHungerNotification } from "@/hooks/useHungerNotification";
 import { useInterval } from "@/hooks/useInterval";
@@ -164,6 +165,7 @@ export function PetCard() {
   const [memoryBookOpen, setMemoryBookOpen] = useState(false);
   const [dailyToast, setDailyToast] = useState<string | null>(null);
   const [reunionPlayKey, setReunionPlayKey] = useState(0);
+  const [feedSquashNonce, setFeedSquashNonce] = useState(0);
   const reunionConsumedRef = useRef(false);
 
   useInterval(() => {
@@ -480,6 +482,7 @@ export function PetCard() {
   };
 
   const runPetInteraction = () => {
+    playPetPurrHaptic();
     setPetJumpKey((prev) => prev + 1);
     applyStatDelta({ joy: 3 }, 1);
     spawnParticle("pet");
@@ -667,6 +670,7 @@ export function PetCard() {
       applyStatDelta({ hunger: 16, joy: 2 }, isSick ? 0 : 8);
       setCurrentScene("feed");
       flashStat("hunger");
+      setFeedSquashNonce((n) => n + 1);
     }
 
     if (action === "sleep") {
@@ -956,6 +960,7 @@ export function PetCard() {
                 craving={cravingForStage}
                 careStyleLabel={careStylePill}
                 happyDanceNonce={happyDanceNonce}
+                feedSquashNonce={feedSquashNonce}
                 reunionPlayKey={reunionPlayKey}
                 onPet={triggerPetJump}
                 petJumpKey={petJumpKey}

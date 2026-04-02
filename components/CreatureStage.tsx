@@ -26,6 +26,8 @@ type CreatureStageProps = {
   careStyleLabel: string;
   /** Increment to replay a one-shot happy dance (e.g. craving fulfilled). */
   happyDanceNonce: number;
+  /** Increment on successful feed — soft marshmallow squash-and-stretch. */
+  feedSquashNonce: number;
   /** When > 0, one-shot “reunion” rush toward the player after a long absence. */
   reunionPlayKey: number;
   onPet: () => void;
@@ -282,6 +284,7 @@ export function CreatureStage({
   craving,
   careStyleLabel,
   happyDanceNonce,
+  feedSquashNonce,
   reunionPlayKey,
   onPet,
   petJumpKey,
@@ -385,6 +388,18 @@ export function CreatureStage({
               <PleadingOverlay active={pleadForFood && !isSick} hunger={hunger} />
               <ReactionOverlay activityReaction={activityReaction} />
               <motion.div
+                key={feedSquashNonce}
+                className="relative inline-block"
+                style={{ transformOrigin: "center 62%" }}
+                initial={false}
+                animate={
+                  feedSquashNonce > 0
+                    ? { scaleX: [1, 1.14, 0.86, 1.06, 1], scaleY: [1, 0.82, 1.12, 0.95, 1] }
+                    : { scaleX: 1, scaleY: 1 }
+                }
+                transition={{ duration: 0.55, ease: [0.34, 1.5, 0.64, 1] }}
+              >
+              <motion.div
                 key={happyDanceNonce}
                 className="relative"
                 initial={happyDanceNonce === 0 ? false : { rotate: 0, scale: 1 }}
@@ -412,6 +427,7 @@ export function CreatureStage({
                     )}
                   </motion.div>
                 </AnimatePresence>
+              </motion.div>
               </motion.div>
             </motion.div>
           )}

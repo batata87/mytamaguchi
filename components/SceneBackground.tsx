@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useTransform, type MotionValue } from "framer-motion";
 import type { PetMood } from "@/lib/game";
+import { useTiltParallax } from "@/hooks/useTiltParallax";
 
 /** Cinematic habitat scenes — background cross-fades on activity. */
 export type SceneState = "nursery" | "feed" | "sleep" | "play" | "clean";
@@ -116,6 +117,108 @@ export function sceneDisplayName(scene: SceneState): string {
   return names[scene];
 }
 
+function NurseryParallaxDecor({
+  fgX,
+  fgY,
+  midX,
+  midY
+}: {
+  fgX: MotionValue<number>;
+  fgY: MotionValue<number>;
+  midX: MotionValue<number>;
+  midY: MotionValue<number>;
+}) {
+  return (
+    <>
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        style={{ x: midX, y: midY }}
+        aria-hidden
+      >
+        {Array.from({ length: 14 }).map((_, idx) => (
+          <span
+            key={`n-star-${idx}`}
+            className="absolute text-lg text-white/55 drop-shadow-sm sm:text-xl"
+            style={{ left: `${4 + (idx * 17) % 88}%`, top: `${6 + (idx * 11) % 42}%` }}
+          >
+            ✦
+          </span>
+        ))}
+      </motion.div>
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        style={{ x: fgX, y: fgY }}
+        aria-hidden
+      >
+        {[
+          { left: "12%", top: "8%", emoji: "🪴" },
+          { left: "78%", top: "10%", emoji: "🫖" },
+          { left: "84%", top: "22%", emoji: "✨" }
+        ].map((pot, idx) => (
+          <span
+            key={`n-pot-${idx}`}
+            className="absolute text-2xl opacity-90 drop-shadow-md sm:text-3xl"
+            style={{ left: pot.left, top: pot.top }}
+          >
+            {pot.emoji}
+          </span>
+        ))}
+      </motion.div>
+    </>
+  );
+}
+
+function KitchenParallaxDecor({
+  fgX,
+  fgY,
+  midX,
+  midY
+}: {
+  fgX: MotionValue<number>;
+  fgY: MotionValue<number>;
+  midX: MotionValue<number>;
+  midY: MotionValue<number>;
+}) {
+  return (
+    <>
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        style={{ x: midX, y: midY }}
+        aria-hidden
+      >
+        {Array.from({ length: 12 }).map((_, idx) => (
+          <span
+            key={`k-star-${idx}`}
+            className="absolute text-base text-amber-100/75 drop-shadow sm:text-lg"
+            style={{ left: `${5 + (idx * 19) % 90}%`, top: `${4 + (idx * 7) % 28}%` }}
+          >
+            ✦
+          </span>
+        ))}
+      </motion.div>
+      <motion.div
+        className="pointer-events-none absolute inset-0"
+        style={{ x: fgX, y: fgY }}
+        aria-hidden
+      >
+        {[
+          { left: "8%", top: "14%", emoji: "🪴" },
+          { left: "72%", top: "12%", emoji: "🍳" },
+          { left: "88%", top: "28%", emoji: "✨" }
+        ].map((pot, idx) => (
+          <span
+            key={`k-pot-${idx}`}
+            className="absolute text-2xl opacity-95 drop-shadow-lg sm:text-3xl"
+            style={{ left: pot.left, top: pot.top }}
+          >
+            {pot.emoji}
+          </span>
+        ))}
+      </motion.div>
+    </>
+  );
+}
+
 export function SceneBackground({
   currentScene,
   mood,
@@ -126,6 +229,14 @@ export function SceneBackground({
   isSick?: boolean;
 }) {
   const gradientKey = currentScene;
+  const parallaxActive = currentScene === "nursery" || currentScene === "feed";
+  const tilt = useTiltParallax(parallaxActive);
+  const bgX = useTransform(tilt.x, (v) => v * 0.26);
+  const bgY = useTransform(tilt.y, (v) => v * 0.18);
+  const midX = useTransform(tilt.x, (v) => v * 0.62);
+  const midY = useTransform(tilt.y, (v) => v * 0.48);
+  const fgX = useTransform(tilt.x, (v) => v * 1.22);
+  const fgY = useTransform(tilt.y, (v) => v * 0.92);
 
   const sceneEase = [0.4, 0, 0.2, 1] as const;
   const sceneDuration = 1.35;
@@ -152,14 +263,17 @@ export function SceneBackground({
             exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
             transition={{ duration: sceneDuration, ease: sceneEase }}
           >
-            <Image
-              src="/assets/idle.png"
-              alt=""
-              fill
-              priority
-              unoptimized
-              className="object-cover object-[center_38%] opacity-95 sm:object-center"
-            />
+            <motion.div className="absolute inset-0" style={{ x: bgX, y: bgY }}>
+              <Image
+                src="/assets/idle.png"
+                alt=""
+                fill
+                priority
+                unoptimized
+                className="object-cover object-[center_38%] opacity-95 sm:object-center"
+              />
+            </motion.div>
+            <NurseryParallaxDecor fgX={fgX} fgY={fgY} midX={midX} midY={midY} />
           </motion.div>
         )}
         {currentScene === "feed" && (
@@ -178,6 +292,7 @@ export function SceneBackground({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.99 }}
               transition={{ duration: sceneDuration, ease: sceneEase }}
+              style={{ x: bgX, y: bgY }}
             >
               <div className="overflow-hidden rounded-[2rem] border border-white/30 bg-white/12 shadow-[0_24px_70px_rgba(55,45,95,0.18)]">
                 <Image
@@ -190,6 +305,7 @@ export function SceneBackground({
                 />
               </div>
             </motion.div>
+            <KitchenParallaxDecor fgX={fgX} fgY={fgY} midX={midX} midY={midY} />
           </motion.div>
         )}
         {currentScene === "sleep" && (
