@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion, type Variants } from "framer-motion";
+import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
 import type { EggType, PetMood, PetStage } from "@/lib/game";
 
@@ -70,7 +70,7 @@ function EggStateArt({ src }: { src: string }) {
       alt="Egg stage"
       width={260}
       height={260}
-      className="h-60 w-60 object-contain"
+      className="h-44 w-44 object-contain sm:h-60 sm:w-60"
       unoptimized
       priority
     />
@@ -233,7 +233,7 @@ export function CreatureStage({
   const creatureFilter = creatureFilterParts.length ? creatureFilterParts.join(" ") : undefined;
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-hidden px-2 sm:px-4">
+    <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
       <motion.div
         className="absolute top-[58%] h-44 w-56 -translate-y-1/2 rounded-full bg-white/18 blur-2xl"
         animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
@@ -273,9 +273,23 @@ export function CreatureStage({
               animate={isExcited ? { scale: [1, 1.1, 1.05], y: [0, -10, 0] } : "idle"}
             >
               <ReactionOverlay activityReaction={activityReaction} />
-              <motion.div animate={isNearDrop ? { scale: [1, 1.08, 1.1] } : { scale: 1 }}>
-                {isSick ? <SickCreatureArt /> : stage === "baby" && useDefaultBabyAsset ? <DefaultBabyArt /> : <CreatureSprite stage={stage} />}
-              </motion.div>
+              <AnimatePresence mode="sync" initial={false}>
+                <motion.div
+                  key={`${stage}-${isSick ? "sick" : "well"}-${useDefaultBabyAsset ? "default" : "evo"}`}
+                  initial={{ opacity: 0, scale: 0.94, y: 8 }}
+                  animate={isNearDrop ? { opacity: 1, scale: [1, 1.08, 1.02], y: [0, -4, 0] } : { opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 1.04, y: -6 }}
+                  transition={{ duration: 0.55, ease: "easeInOut" }}
+                >
+                  {isSick ? (
+                    <SickCreatureArt />
+                  ) : stage === "baby" && useDefaultBabyAsset ? (
+                    <DefaultBabyArt />
+                  ) : (
+                    <CreatureSprite stage={stage} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </motion.div>
           )}
         </motion.div>

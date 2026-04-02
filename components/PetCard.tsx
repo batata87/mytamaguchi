@@ -95,6 +95,7 @@ export function PetCard() {
   const [healPulseKey, setHealPulseKey] = useState(0);
   const [hasStarted, setHasStarted] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
+  const [isPageVisible, setIsPageVisible] = useState(true);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
   const shouldHideMain = !isReady || !hasStarted || (hasStarted && needsEggChoice);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -132,6 +133,27 @@ export function PetCard() {
     updateViewport();
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    const updateVisibility = () => {
+      setIsPageVisible(!document.hidden);
+    };
+
+    updateVisibility();
+    document.addEventListener("visibilitychange", updateVisibility);
+    window.addEventListener("pagehide", updateVisibility);
+    window.addEventListener("pageshow", updateVisibility);
+
+    return () => {
+      document.removeEventListener("visibilitychange", updateVisibility);
+      window.removeEventListener("pagehide", updateVisibility);
+      window.removeEventListener("pageshow", updateVisibility);
+    };
   }, []);
 
   useEffect(() => {
@@ -195,7 +217,7 @@ export function PetCard() {
   }, [isRenaming]);
 
   useEffect(() => {
-    if (!hasStarted || !isSick) {
+    if (!hasStarted || !isSick || !isPageVisible) {
       if (heartbeatTimerRef.current) {
         window.clearInterval(heartbeatTimerRef.current);
         heartbeatTimerRef.current = null;
@@ -259,7 +281,7 @@ export function PetCard() {
       gain.gain.cancelScheduledValues(ctx.currentTime);
       gain.gain.setValueAtTime(0, ctx.currentTime);
     };
-  }, [hasStarted, isSick]);
+  }, [hasStarted, isPageVisible, isSick]);
 
   const ensureAmbientMusic = useCallback(() => {
     if (typeof window === "undefined") {
@@ -281,7 +303,7 @@ export function PetCard() {
       return;
     }
 
-    if (!hasStarted || isSick) {
+    if (!hasStarted || isSick || !isPageVisible) {
       audio.pause();
       return;
     }
@@ -292,7 +314,7 @@ export function PetCard() {
         // iOS may block autoplay until a user gesture; begin button also primes playback.
       });
     }
-  }, [ensureAmbientMusic, hasStarted, isSick]);
+  }, [ensureAmbientMusic, hasStarted, isPageVisible, isSick]);
 
   const spawnParticle = (type: FeedbackType) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
