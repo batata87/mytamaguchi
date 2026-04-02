@@ -168,7 +168,7 @@ function ActivityWithSubmenu({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-full right-0 z-[60] mb-2 flex min-w-[148px] flex-col gap-1 rounded-xl border border-white/35 bg-slate-900/75 p-2 shadow-xl backdrop-blur-md sm:bottom-auto sm:right-full sm:top-0 sm:mb-0 sm:mr-2"
+            className="absolute bottom-full left-0 right-auto z-[60] mb-2 max-h-[45vh] min-w-[148px] overflow-y-auto flex flex-col gap-1 rounded-xl border border-white/35 bg-slate-900/75 p-2 shadow-xl backdrop-blur-md sm:bottom-auto sm:left-auto sm:right-full sm:top-0 sm:mb-0 sm:mr-2"
           >
             <div className="mb-1 flex items-center justify-between px-1">
               <p className="text-[8px] font-bold uppercase tracking-wide text-white/70">Choose & drag</p>
@@ -262,7 +262,7 @@ export function Sidebar({
         </>
       )}
 
-      <div className="flex flex-row items-end justify-center gap-2 overflow-x-auto rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
+      <div className="flex flex-row items-end justify-center gap-2 overflow-x-auto overflow-y-visible rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
         <p className="px-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-slate-700">
           {isEgg ? "After hatch" : "Activities"}
         </p>
