@@ -299,7 +299,7 @@ export function PetCard() {
   const triggerPetJump = () => {
     if (pet.stage === "egg") {
       if (!eggIsReadyByTime) {
-        const warmGain = Math.max(0, Math.min(3, XP_HATCH_TARGET - 20 - pet.xp));
+        const warmGain = Math.max(0, Math.min(3, XP_HATCH_TARGET - pet.xp));
         if (warmGain > 0) {
           applyStatDelta({}, warmGain);
         }
@@ -654,7 +654,7 @@ export function PetCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.88 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className="pointer-events-none fixed inset-x-0 top-[63%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
+            className="pointer-events-none fixed inset-x-0 top-[67%] z-10 flex -translate-y-1/2 items-center justify-center sm:top-[51%]"
           >
             <div ref={creatureRef} className="pointer-events-auto h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]">
               <CreatureStage

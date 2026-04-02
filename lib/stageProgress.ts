@@ -29,7 +29,7 @@ export function getGrowthSegment(xp: number, stage: PetStage): GrowthSegment {
   if (stage === "egg") {
     return {
       title: "Ready to hatch",
-      detail: "Pet the egg — then Bia Sync grows with care.",
+      detail: "Heat the egg — then Bia XP grows with care.",
       barPct: 0,
       showBar: false
     };
@@ -43,7 +43,7 @@ export function getGrowthSegment(xp: number, stage: PetStage): GrowthSegment {
     const need = Math.max(0, end - xp);
     return {
       title: "Growing toward Mid",
-      detail: need > 0 ? `${need} Bia Sync until Mid` : "Evolving…",
+      detail: need > 0 ? `${need} Bia XP until Mid` : "Evolving…",
       barPct,
       showBar: true
     };
@@ -57,7 +57,7 @@ export function getGrowthSegment(xp: number, stage: PetStage): GrowthSegment {
     const need = Math.max(0, end - xp);
     return {
       title: "Growing toward Grown",
-      detail: need > 0 ? `${need} Bia Sync until Grown` : "Evolving…",
+      detail: need > 0 ? `${need} Bia XP until Grown` : "Evolving…",
       barPct,
       showBar: true
     };

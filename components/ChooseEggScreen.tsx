@@ -44,15 +44,17 @@ export function ChooseEggScreen({ onChoose }: ChooseEggScreenProps) {
             <motion.button
               key={option.id}
               onClick={() => onChoose(option.id)}
-              className="rounded-3xl border border-white/15 bg-white/5 px-3 py-4 text-center"
+              className="flex h-[156px] flex-col items-center justify-between rounded-3xl border border-white/15 bg-white/5 px-3 py-4 text-center"
               whileHover={{ y: -4, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <motion.div
-                className={`mx-auto h-24 w-16 rounded-[48%_48%_42%_42%/58%_58%_42%_42%] bg-gradient-to-b ${option.shellClass} ${option.glowClass}`}
-                animate={{ y: [0, -4, 0], rotate: [0, -1.5, 1.5, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              />
+              <div className="flex h-24 w-full items-end justify-center">
+                <motion.div
+                  className={`h-24 w-16 rounded-[48%_48%_42%_42%/58%_58%_42%_42%] bg-gradient-to-b ${option.shellClass} ${option.glowClass}`}
+                  animate={{ y: [0, -4, 0], rotate: [0, -1.25, 1.25, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                />
+              </div>
               <div className="mt-3 text-xs font-semibold text-white/90">{option.label}</div>
             </motion.button>
           ))}

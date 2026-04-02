@@ -135,7 +135,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
         </div>
         <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/16 px-2 py-1 backdrop-blur-sm">
           <Star className="fill-white/90 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" size={14} strokeWidth={1.8} />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/76">Bia Sync</span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/76">Bia XP</span>
           <motion.span
             key={bond}
             initial={{ opacity: 0.7, scale: 0.96 }}
