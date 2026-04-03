@@ -14,7 +14,9 @@ import { MemoryBook } from "@/components/MemoryBook";
 import { Boutique } from "@/components/Boutique";
 import { StardustCounter } from "@/components/StardustCounter";
 import { DAILY_LOGIN_STARDUST, HATCH_STARDUST_BONUS, StardustGuideModal } from "@/components/StardustGuideModal";
-import { SceneBackground, type SceneState } from "@/components/SceneBackground";
+import { SceneBackground } from "@/components/SceneBackground";
+import { getStardustWeather } from "@/lib/stardustWeather";
+import { useGlobalFingerAndIdle } from "@/hooks/useGlobalFingerAndIdle";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
 import { randomCravingPick } from "@/lib/activitySubmenus";
@@ -49,16 +51,14 @@ const HEAL_CYCLE_STORAGE_KEY = "bia-heal-cycle-v1";
 const EGG_HATCH_DURATION_MS = 36 * 60 * 60 * 1000; // 1.5 days
 const HEAL_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours
 const POOP_MAX = 3;
+const LONG_SHY_ABSENCE_MS = 8 * 60 * 60 * 1000;
+const SESSION_PEEK_KEY = "bia-session-peek-v1";
 
 type Particle = {
   id: number;
   x: number;
   y: number;
   type: FeedbackType;
-};
-
-type BiaPulse = {
-  id: number;
 };
 
 type StardustFlight = {
@@ -68,12 +68,6 @@ type StardustFlight = {
   x1: number;
   y1: number;
 };
-
-const biaPulse = {
-  initial: { scale: 0.8, opacity: 0.6 },
-  animate: { scale: 2.5, opacity: 0 },
-  transition: { duration: 0.4, ease: "easeOut" }
-} as const;
 
 const statConfig: Array<{ key: StatKey; label: string; color: string }> = [
   { key: "hunger", label: "Hunger", color: "bg-rose-400" },
@@ -133,9 +127,7 @@ export function PetCard() {
   }, []);
 
   const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
-  const [currentScene, setCurrentScene] = useState<SceneState>("nursery");
   const [particles, setParticles] = useState<Particle[]>([]);
-  const [pulses, setPulses] = useState<BiaPulse[]>([]);
   const [petJumpKey, setPetJumpKey] = useState(0);
   const [activeAction, setActiveAction] = useState<CareAction | null>(null);
   const [anticipationState, setAnticipationState] = useState<AnticipationState>("idle");
@@ -152,6 +144,13 @@ export function PetCard() {
   const shouldHideMain =
     !isReady || !hasStarted || (hasStarted && needsEggChoice) || awaitingStarterName;
   const eligibleForPoop = !shouldHideMain && pet.stage !== "egg" && !isSick && isPageVisible;
+
+  const { finger: fingerScreen, zenMeditate, bumpActivity } = useGlobalFingerAndIdle(
+    !shouldHideMain && isPageVisible && hasStarted
+  );
+  const [peekSessionKey, setPeekSessionKey] = useState(0);
+  const [shyCorner, setShyCorner] = useState(false);
+  const [meteorDrops, setMeteorDrops] = useState<Array<{ id: number; x: number; y: number }>>([]);
 
   useHungerNotification({
     pet,
@@ -290,6 +289,13 @@ export function PetCard() {
     const reunited = shouldReunite;
     if (shouldReunite) {
       reunionConsumedRef.current = true;
+      if (
+        welcomeBackAbsentMs != null &&
+        welcomeBackAbsentMs >= LONG_SHY_ABSENCE_MS &&
+        pet.stage !== "egg"
+      ) {
+        setShyCorner(true);
+      }
       setReunionPlayKey((k) => k + 1);
       void triggerSchoolPrideBurst();
       clearWelcomeBack();
@@ -327,7 +333,7 @@ export function PetCard() {
     );
     const t = window.setTimeout(() => setDailyToast(null), 8000);
     return () => window.clearTimeout(t);
-  }, [hasStarted, isReady, needsEggChoice, awaitingStarterName, welcomeBackAbsentMs, clearWelcomeBack, applyStatDelta, pet.name]);
+  }, [hasStarted, isReady, needsEggChoice, awaitingStarterName, welcomeBackAbsentMs, clearWelcomeBack, applyStatDelta, pet.name, pet.stage]);
 
   useEffect(() => {
     if (!hasStarted || !isReady || pet.stage === "egg" || needsEggChoice) {
@@ -372,16 +378,18 @@ export function PetCard() {
   }, [craving]);
 
   useEffect(() => {
-    if (currentScene === "nursery") {
+    if (shouldHideMain || pet.stage === "egg") {
       return;
     }
-
-    const timer = setTimeout(() => {
-      setCurrentScene("nursery");
-    }, 3_200);
-
-    return () => clearTimeout(timer);
-  }, [currentScene]);
+    try {
+      if (typeof sessionStorage !== "undefined" && !sessionStorage.getItem(SESSION_PEEK_KEY)) {
+        sessionStorage.setItem(SESSION_PEEK_KEY, "1");
+        setPeekSessionKey((k) => k + 1);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [shouldHideMain, pet.stage]);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -573,7 +581,7 @@ export function PetCard() {
     }
   }, [ensureAmbientMusic, hasStarted, isPageVisible, isSick]);
 
-  const spawnParticle = (type: FeedbackType) => {
+  const spawnParticle = useCallback((type: FeedbackType) => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     const x = Math.max(16, Math.min(viewport.width - 16, viewport.width / 2 + (Math.random() * 160 - 80)));
     const y = viewport.height - 120;
@@ -581,15 +589,7 @@ export function PetCard() {
     setTimeout(() => {
       setParticles((prev) => prev.filter((particle) => particle.id !== id));
     }, 900);
-  };
-
-  const triggerBiaPulse = () => {
-    const id = Date.now() + Math.floor(Math.random() * 1000);
-    setPulses((prev) => [...prev, { id }]);
-    window.setTimeout(() => {
-      setPulses((prev) => prev.filter((pulse) => pulse.id !== id));
-    }, 420);
-  };
+  }, [viewport.height, viewport.width]);
 
   const triggerActivityReaction = (action: ActivityReaction) => {
     if (activityReactionTimerRef.current) {
@@ -603,11 +603,11 @@ export function PetCard() {
   };
 
   const runPetInteraction = () => {
+    setShyCorner(false);
     playPetPurrHaptic();
     setPetJumpKey((prev) => prev + 1);
     applyStatDelta({ joy: 3 }, 1);
     spawnParticle("pet");
-    triggerBiaPulse();
     setPlayerMeta((m) => {
       const next = { ...m, carePetCount: m.carePetCount + 1 };
       savePlayerMeta(next);
@@ -662,12 +662,12 @@ export function PetCard() {
     return Math.hypot(point.x - centerX, point.y - centerY);
   };
 
-  const flashStat = (stat: StatKey) => {
+  const flashStat = useCallback((stat: StatKey) => {
     setFlashedStat(stat);
     window.setTimeout(() => {
       setFlashedStat((current) => (current === stat ? null : current));
     }, 650);
-  };
+  }, []);
 
   const currentEggAsset =
     pet.xp < XP_HATCH_TARGET * 0.33
@@ -712,7 +712,6 @@ export function PetCard() {
     });
     setStardustPulseNonce((n) => n + 1);
     await triggerSchoolPrideBurst();
-    setCurrentScene("nursery");
     setTimeout(() => {
       setHatchPhase("idle");
       setScreenFlashTone(null);
@@ -730,7 +729,6 @@ export function PetCard() {
     await new Promise((resolve) => setTimeout(resolve, 180));
     await healPet();
     setHealPulseKey((prev) => prev + 1);
-    triggerBiaPulse();
     ["hunger", "energy", "joy", "hygiene"].forEach((stat) => flashStat(stat as StatKey));
     spawnParticle("clean");
     window.setTimeout(() => {
@@ -738,7 +736,7 @@ export function PetCard() {
       setInputsLocked(false);
       setActiveAction(null);
     }, 650);
-  }, [flashStat, healPet, inputsLocked, isSick, spawnParticle, triggerBiaPulse]);
+  }, [flashStat, healPet, inputsLocked, isSick, spawnParticle]);
 
   useEffect(() => {
     if (!isSick || !healCycle || !healIsReady || inputsLocked) {
@@ -789,7 +787,6 @@ export function PetCard() {
     }
     if (action === "feed") {
       applyStatDelta({ hunger: 16, joy: 2 }, isSick ? 0 : 8);
-      setCurrentScene("feed");
       flashStat("hunger");
       setFeedSquashNonce((n) => n + 1);
       if (feedPoopTimerRef.current != null) {
@@ -806,23 +803,19 @@ export function PetCard() {
 
     if (action === "sleep") {
       applyStatDelta({ energy: 18, hunger: -4 }, 8);
-      setCurrentScene("sleep");
       flashStat("energy");
     }
 
     if (action === "play") {
       applyStatDelta({ joy: 18, energy: -4, hunger: -2 }, isSick ? 0 : 8);
-      setCurrentScene("play");
       flashStat("joy");
     }
 
     if (action === "clean") {
       applyStatDelta({ hygiene: 20, joy: 4 }, 8);
-      setCurrentScene("clean");
       flashStat("hygiene");
     }
     spawnParticle(action);
-    triggerBiaPulse();
     if (action !== "pet") {
       triggerActivityReaction(action);
     }
@@ -883,7 +876,7 @@ export function PetCard() {
       return;
     }
 
-    const memoryKey = `${action}:${subId}:${currentScene}`;
+    const memoryKey = `${action}:${subId}:room`;
     const cravingMatch =
       craving &&
       action === craving.action &&
@@ -1019,6 +1012,38 @@ export function PetCard() {
     return { hatEmoji, skinExtra, roomEmoji };
   }, [playerMeta.equippedHatId, playerMeta.equippedSkinId, playerMeta.equippedRoomId, previewItem]);
 
+  const roomWeather = useMemo(() => getStardustWeather(nowTick).weather, [nowTick]);
+
+  useEffect(() => {
+    if (shouldHideMain || roomWeather !== "meteor_shower") {
+      setMeteorDrops([]);
+      return;
+    }
+    const spawn = () => {
+      const id = Date.now() + Math.random();
+      const x = 40 + Math.random() * Math.max(80, viewport.width - 80);
+      setMeteorDrops((m) => [...m, { id, x, y: 12 }]);
+      window.setTimeout(() => setMeteorDrops((m) => m.filter((d) => d.id !== id)), 14_000);
+    };
+    spawn();
+    const tid = window.setInterval(spawn, 4500);
+    return () => clearInterval(tid);
+  }, [shouldHideMain, roomWeather, viewport.width]);
+
+  const handleTickle = useCallback(() => {
+    playPetPurrHaptic();
+    bumpActivity();
+    applyStatDelta({ joy: 4 }, 2);
+    for (let i = 0; i < 8; i++) {
+      window.setTimeout(() => spawnParticle("play"), i * 45);
+    }
+  }, [bumpActivity, applyStatDelta, spawnParticle]);
+
+  const handleNudge = useCallback(() => {
+    bumpActivity();
+    applyStatDelta({ joy: 1 }, 1);
+  }, [bumpActivity, applyStatDelta]);
+
   const handleHoldStardust = useCallback(() => {
     if (inputsLocked) {
       return;
@@ -1042,12 +1067,28 @@ export function PetCard() {
       animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
       transition={{ duration: 0.7, ease: "easeInOut" }}
     >
-      <SceneBackground
-        currentScene={currentScene}
-        mood={currentMood}
-        isSick={isSick}
-        roomDecorEmoji={!shouldHideMain ? resolveCosmetics.roomEmoji : null}
-      />
+      <SceneBackground mood={currentMood} isSick={isSick} roomDecorEmoji={!shouldHideMain ? resolveCosmetics.roomEmoji : null} />
+
+      {!shouldHideMain && roomWeather === "meteor_shower" && meteorDrops.length > 0
+        ? meteorDrops.map((m) => (
+            <motion.button
+              key={m.id}
+              type="button"
+              className="app-tap-target pointer-events-auto fixed z-[56] flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/50 bg-amber-50/95 text-lg shadow-md"
+              style={{ left: m.x, top: m.y }}
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: viewport.height * 0.42 }}
+              transition={{ duration: 6, ease: "linear" }}
+              aria-label="Collect stardust"
+              onClick={() => {
+                grantStardust(2, { x: m.x, y: m.y });
+                setMeteorDrops((d) => d.filter((x) => x.id !== m.id));
+              }}
+            >
+              ✦
+            </motion.button>
+          ))
+        : null}
 
       {!shouldHideMain && (
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -1239,6 +1280,14 @@ export function PetCard() {
                 cosmeticSkinExtraFilter={resolveCosmetics.skinExtra}
                 cosmeticHatEmoji={resolveCosmetics.hatEmoji}
                 onHoldStardustReward={handleHoldStardust}
+                fingerScreen={fingerScreen}
+                zenMeditate={zenMeditate}
+                peekSessionKey={peekSessionKey}
+                shyCorner={shyCorner}
+                onShyDismiss={() => setShyCorner(false)}
+                onTickle={handleTickle}
+                onNudge={handleNudge}
+                onPhysicalActivity={bumpActivity}
               />
             </div>
           </motion.div>
@@ -1297,19 +1346,6 @@ export function PetCard() {
             </motion.div>
           )
         )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {pulses.map((pulse) => (
-          <motion.div
-            key={pulse.id}
-            className="pointer-events-none fixed left-1/2 top-[51%] z-20 h-36 w-36 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-200/75"
-            initial={biaPulse.initial}
-            animate={biaPulse.animate}
-            exit={{ opacity: 0 }}
-            transition={biaPulse.transition}
-          />
-        ))}
       </AnimatePresence>
 
       <AnimatePresence>

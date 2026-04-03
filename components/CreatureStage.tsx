@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { animate, AnimatePresence, motion, useMotionValue, useSpring, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
 import type { EggType, PetMood, PetStage } from "@/lib/game";
 
@@ -49,6 +49,19 @@ type CreatureStageProps = {
   cosmeticHatEmoji?: string | null;
   /** Every 5s continuous hold while not egg: callback (stardust grant in parent). */
   onHoldStardustReward?: () => void;
+  /** Global finger for eye tracking (screen coords). */
+  fingerScreen?: { x: number; y: number } | null;
+  /** Long idle — calmer pose + “meditation” feel. */
+  zenMeditate?: boolean;
+  /** Session open — one rush toward camera. */
+  peekSessionKey?: number;
+  /** Long absence — shy in corner until interaction. */
+  shyCorner?: boolean;
+  onShyDismiss?: () => void;
+  onTickle?: () => void;
+  onNudge?: () => void;
+  /** Any physical gesture — resets idle zen timer in parent. */
+  onPhysicalActivity?: () => void;
 };
 
 function eggTypeToTintFilter(eggType: EggType): string {
@@ -286,6 +299,12 @@ function CravingBubble({ craving, now }: { craving: NonNullable<ActiveCraving>; 
   );
 }
 
+function isInBellyRegion(clientX: number, clientY: number, rect: DOMRect) {
+  const nx = (clientX - rect.left) / rect.width;
+  const ny = (clientY - rect.top) / rect.height;
+  return ny > 0.38 && ny < 0.8 && nx > 0.22 && nx < 0.78;
+}
+
 export function CreatureStage({
   stage,
   hatchPhase,
@@ -311,10 +330,26 @@ export function CreatureStage({
   activityReaction,
   cosmeticSkinExtraFilter,
   cosmeticHatEmoji,
-  onHoldStardustReward
+  onHoldStardustReward,
+  fingerScreen = null,
+  zenMeditate = false,
+  peekSessionKey = 0,
+  shyCorner = false,
+  onShyDismiss,
+  onTickle,
+  onNudge,
+  onPhysicalActivity
 }: CreatureStageProps) {
-  const breatheVariants = breatheVariantsForMood(mood);
-  const breatheDuration = isSick ? 4.8 : mood === "blissful" ? 1.4 : 2.4;
+  const breatheForBody = useMemo(() => {
+    if (zenMeditate && stage !== "egg" && !isSick) {
+      return { idle: { scale: [1, 1.03, 1], y: [0, -3, 0] } };
+    }
+    return breatheVariantsForMood(mood);
+  }, [zenMeditate, stage, isSick, mood]);
+  const breatheDuration = useMemo(() => {
+    if (zenMeditate && stage !== "egg" && !isSick) return 5.4;
+    return isSick ? 4.8 : mood === "blissful" ? 1.4 : 2.4;
+  }, [zenMeditate, stage, isSick, mood]);
   const creatureFilterParts: string[] = [];
 
   if (isSick) {
@@ -332,6 +367,38 @@ export function CreatureStage({
   }
 
   const creatureFilter = creatureFilterParts.length ? creatureFilterParts.join(" ") : undefined;
+  const creatureRootRef = useRef<HTMLDivElement>(null);
+  const nudgeX = useMotionValue(0);
+  const smoothNudgeX = useSpring(nudgeX, { stiffness: 380, damping: 26 });
+  const stretchX = useMotionValue(1);
+  const stretchY = useMotionValue(1);
+  const smoothStretchX = useSpring(stretchX, { stiffness: 420, damping: 32 });
+  const smoothStretchY = useSpring(stretchY, { stiffness: 420, damping: 32 });
+  const pointersMapRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const stretchBaseDistRef = useRef<number | null>(null);
+  const tickleSessionRef = useRef<{ acc: number; lastAngle: number | null; start: number } | null>(null);
+  const tickleFiredRef = useRef(false);
+  const nudgeDownXRef = useRef(0);
+  const nudgeDownTRef = useRef(0);
+  const didMultiTouchRef = useRef(false);
+  const nudgeFiredRef = useRef(false);
+  const [tickleNonce, setTickleNonce] = useState(0);
+  const [faceLayout, setFaceLayout] = useState(0);
+  const [eyeGaze, setEyeGaze] = useState({ ox: 0, oy: 0 });
+
+  useLayoutEffect(() => {
+    if (!fingerScreen || stage === "egg" || isSick || !creatureRootRef.current) {
+      setEyeGaze({ ox: 0, oy: 0 });
+      return;
+    }
+    const r = creatureRootRef.current.getBoundingClientRect();
+    const cx = r.left + r.width * 0.5;
+    const cy = r.top + r.height * 0.36;
+    const dx = Math.max(-1, Math.min(1, (fingerScreen.x - cx) / Math.max(40, r.width * 0.38)));
+    const dy = Math.max(-1, Math.min(1, (fingerScreen.y - cy) / Math.max(40, r.height * 0.42)));
+    setEyeGaze({ ox: dx * 7, oy: dy * 5 });
+  }, [fingerScreen, stage, isSick, petJumpKey, tickleNonce, faceLayout]);
+
   const holdTimerRef = useRef<number | null>(null);
   const holdRepeatRef = useRef<number | null>(null);
   const pointerDownAtRef = useRef(0);
@@ -350,6 +417,23 @@ export function CreatureStage({
 
   useEffect(() => () => clearHoldTimers(), []);
 
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    if (!craving) {
+      return;
+    }
+    const id = window.setInterval(() => setNowTick(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [craving]);
+
+  useLayoutEffect(() => {
+    const el = creatureRootRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setFaceLayout((n) => n + 1));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stage, isSick]);
+
   const enableHoldStardust = Boolean(onHoldStardustReward && stage !== "egg");
 
   const handleHoldPointerDown = () => {
@@ -366,6 +450,15 @@ export function CreatureStage({
   };
 
   const handleHoldPointerEnd = () => {
+    if (tickleFiredRef.current) {
+      tickleFiredRef.current = false;
+      tickleSessionRef.current = null;
+      return;
+    }
+    if (nudgeFiredRef.current) {
+      nudgeFiredRef.current = false;
+      return;
+    }
     if (!enableHoldStardust) {
       return;
     }
@@ -376,14 +469,116 @@ export function CreatureStage({
     }
   };
 
-  const [nowTick, setNowTick] = useState(() => Date.now());
-  useEffect(() => {
-    if (!craving) {
+  const fireNudge = (deltaX: number) => {
+    nudgeFiredRef.current = true;
+    onPhysicalActivity?.();
+    onNudge?.();
+    const push = Math.max(-56, Math.min(56, deltaX * 0.85));
+    void animate(nudgeX, push, { type: "spring", stiffness: 420, damping: 20 }).then(() =>
+      animate(nudgeX, 0, { type: "spring", stiffness: 200, damping: 24 })
+    );
+  };
+
+  const tryTickleFromMove = (clientX: number, clientY: number) => {
+    const el = creatureRootRef.current;
+    if (!el || stage === "egg" || isSick) return;
+    const rect = el.getBoundingClientRect();
+    if (!isInBellyRegion(clientX, clientY, rect)) {
       return;
     }
-    const id = window.setInterval(() => setNowTick(Date.now()), 500);
-    return () => window.clearInterval(id);
-  }, [craving]);
+    const cx = rect.left + rect.width * 0.5;
+    const cy = rect.top + rect.height * 0.58;
+    const angle = Math.atan2(clientY - cy, clientX - cx);
+    const sess = tickleSessionRef.current;
+    if (!sess) return;
+    if (sess.lastAngle != null) {
+      let d = angle - sess.lastAngle;
+      if (d > Math.PI) d -= 2 * Math.PI;
+      if (d < -Math.PI) d += 2 * Math.PI;
+      sess.acc += Math.abs(d);
+    }
+    sess.lastAngle = angle;
+    if (sess.acc > Math.PI * 2.2 && Date.now() - sess.start < 900) {
+      tickleFiredRef.current = true;
+      clearHoldTimers();
+      tickleSessionRef.current = null;
+      onTickle?.();
+      onPhysicalActivity?.();
+      setTickleNonce((n) => n + 1);
+      void animate(nudgeX, [0, -5, 5, -3, 0], { duration: 0.55, ease: "easeInOut" });
+    }
+  };
+
+  const onCreaturePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    onPhysicalActivity?.();
+    if (shyCorner) {
+      onShyDismiss?.();
+    }
+    pointersMapRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersMapRef.current.size === 2) {
+      didMultiTouchRef.current = true;
+      const pts = [...pointersMapRef.current.values()];
+      const d = Math.hypot(pts[0]!.x - pts[1]!.x, pts[0]!.y - pts[1]!.y);
+      stretchBaseDistRef.current = Math.max(24, d);
+      clearHoldTimers();
+      return;
+    }
+    nudgeDownXRef.current = e.clientX;
+    nudgeDownTRef.current = Date.now();
+    if (stage !== "egg" && !isSick && enableHoldStardust) {
+      tickleSessionRef.current = { acc: 0, lastAngle: null, start: Date.now() };
+    }
+    if (enableHoldStardust) {
+      handleHoldPointerDown();
+    }
+  };
+
+  const onCreaturePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointersMapRef.current.has(e.pointerId)) return;
+    pointersMapRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointersMapRef.current.size >= 2 && stretchBaseDistRef.current != null) {
+      const pts = [...pointersMapRef.current.values()];
+      const d = Math.hypot(pts[0]!.x - pts[1]!.x, pts[0]!.y - pts[1]!.y);
+      const ratio = d / stretchBaseDistRef.current;
+      const clamped = Math.max(0.88, Math.min(1.14, ratio));
+      stretchX.set(clamped);
+      stretchY.set(2 - clamped);
+      onPhysicalActivity?.();
+      return;
+    }
+    if (tickleSessionRef.current && enableHoldStardust) {
+      tryTickleFromMove(e.clientX, e.clientY);
+    }
+  };
+
+  const onCreaturePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    pointersMapRef.current.delete(e.pointerId);
+    if (pointersMapRef.current.size < 2) {
+      stretchBaseDistRef.current = null;
+      void animate(stretchX, 1, { type: "spring", stiffness: 380, damping: 28 });
+      void animate(stretchY, 1, { type: "spring", stiffness: 380, damping: 28 });
+    }
+    if (pointersMapRef.current.size > 0) {
+      return;
+    }
+    const dt = Date.now() - nudgeDownTRef.current;
+    const dx = e.clientX - nudgeDownXRef.current;
+    if (!didMultiTouchRef.current && Math.abs(dx) > 38 && dt < 420 && stage !== "egg" && !isSick) {
+      fireNudge(dx);
+      clearHoldTimers();
+      tickleSessionRef.current = null;
+      didMultiTouchRef.current = false;
+      if (enableHoldStardust) {
+        handleHoldPointerEnd();
+      }
+      return;
+    }
+    didMultiTouchRef.current = false;
+    tickleSessionRef.current = null;
+    if (enableHoldStardust) {
+      handleHoldPointerEnd();
+    }
+  };
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
@@ -394,26 +589,55 @@ export function CreatureStage({
           </AnimatePresence>
         </div>
       )}
-      <motion.button
-        type="button"
+      <motion.div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            onPet();
+          }
+        }}
         onClick={enableHoldStardust ? undefined : onPet}
-        onPointerDown={enableHoldStardust ? handleHoldPointerDown : undefined}
-        onPointerUp={enableHoldStardust ? handleHoldPointerEnd : undefined}
+        onPointerDown={onCreaturePointerDown}
+        onPointerMove={onCreaturePointerMove}
+        onPointerUp={onCreaturePointerUp}
         onPointerLeave={enableHoldStardust ? handleHoldPointerEnd : undefined}
         onPointerCancel={enableHoldStardust ? handleHoldPointerEnd : undefined}
-        className="relative -mt-2 flex items-center justify-center"
+        className="relative -mt-2 flex cursor-pointer touch-none items-center justify-center rounded-[2.5rem] outline-none focus-visible:ring-2 focus-visible:ring-violet-400/80"
         animate={pleadForFood ? { rotate: -5 } : { rotate: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <motion.div
-          key={reunionPlayKey > 0 ? `reunion-${reunionPlayKey}` : "idle"}
-          initial={reunionPlayKey > 0 ? { scale: 0.68, y: 100, opacity: 0.72 } : false}
+          style={{ x: smoothNudgeX }}
+          className="relative flex flex-col items-center justify-center"
+        >
+        <motion.div
+          key={`reunion-${reunionPlayKey}-peek-${peekSessionKey}-shy-${shyCorner ? 1 : 0}`}
+          initial={
+            reunionPlayKey > 0
+              ? { scale: 0.68, y: 100, opacity: 0.72 }
+              : peekSessionKey > 0
+                ? { scale: 1.14, y: 48, opacity: 0.88 }
+                : shyCorner
+                  ? { scale: 0.88, y: 36, opacity: 0.9 }
+                  : false
+          }
           animate={{ scale: 1, y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 340, damping: 19, mass: 0.62 }}
           className="relative flex flex-col items-center justify-center"
           style={{ transformOrigin: "50% 60%" }}
         >
-        <div className="relative flex flex-col items-center justify-center" style={{ filter: creatureFilter }}>
+        <motion.div
+          ref={creatureRootRef}
+          className="relative flex flex-col items-center justify-center"
+          style={{
+            scaleX: smoothStretchX,
+            scaleY: smoothStretchY,
+            filter: creatureFilter ?? undefined,
+            transformOrigin: "50% 60%"
+          }}
+        >
         <motion.div
           initial={false}
           animate={healPulseKey ? { scale: [1, 1.12, 0.98, 1], y: [0, -4, 0] } : petJumpKey ? { y: [0, -20, 0] } : { y: 0 }}
@@ -434,7 +658,7 @@ export function CreatureStage({
             </motion.div>
           ) : (
             <motion.div
-              variants={breatheVariants}
+              variants={breatheForBody}
               initial={false}
               className="relative"
               animate={
@@ -463,6 +687,28 @@ export function CreatureStage({
               )}
               <PleadingOverlay active={pleadForFood && !isSick} hunger={hunger} />
               <ReactionOverlay activityReaction={activityReaction} />
+              {zenMeditate && !isSick && (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-[-6%] z-[22] -translate-x-1/2 text-xl opacity-90"
+                  aria-hidden
+                >
+                  🧘
+                </div>
+              )}
+              {!isSick && (
+                <div
+                  className="pointer-events-none absolute left-[31%] top-[28%] z-[24] h-2 w-2 rounded-full bg-slate-900/85 sm:left-[32%] sm:top-[29%]"
+                  style={{ transform: `translate(${eyeGaze.ox}px, ${eyeGaze.oy}px)` }}
+                  aria-hidden
+                />
+              )}
+              {!isSick && (
+                <div
+                  className="pointer-events-none absolute right-[31%] top-[28%] z-[24] h-2 w-2 rounded-full bg-slate-900/85 sm:right-[32%] sm:top-[29%]"
+                  style={{ transform: `translate(${eyeGaze.ox}px, ${eyeGaze.oy}px)` }}
+                  aria-hidden
+                />
+              )}
               {poopIds.length > 0 ? (
                 <div className="pointer-events-none absolute -bottom-[6%] left-1/2 z-[15] flex max-w-[min(100%,200px)] -translate-x-1/2 items-end justify-center gap-0.5 sm:-bottom-[4%]">
                   <AnimatePresence>
@@ -534,10 +780,9 @@ export function CreatureStage({
             </motion.div>
           )}
         </motion.div>
-        </div>
         {cosmeticHatEmoji ? (
           <div
-            className="pointer-events-none absolute left-1/2 top-[6%] z-50 -translate-x-1/2 text-[2.6rem] leading-none drop-shadow-[0_4px_14px_rgba(15,23,42,0.35)] sm:text-[2.85rem]"
+            className="pointer-events-none absolute left-1/2 top-[6%] z-50 -translate-x-1/2 text-[2.6rem] leading-none sm:text-[2.85rem]"
             style={{ filter: "none" }}
             aria-hidden
           >
@@ -545,7 +790,9 @@ export function CreatureStage({
           </div>
         ) : null}
         </motion.div>
-      </motion.button>
+        </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

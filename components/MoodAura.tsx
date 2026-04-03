@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
 import { Sparkles, TriangleAlert, HeartPulse } from "lucide-react";
 import type { PetMood } from "@/lib/game";
 
@@ -55,18 +54,11 @@ export function MoodAura({ mood }: { mood: PetMood }) {
   const v = moodVisual[mood];
 
   return (
-    <motion.div
-      className={`relative overflow-hidden rounded-xl bg-gradient-to-r p-[1px] ${v.ring} ring-1 shadow-sm`}
-      initial={false}
-      animate={{ opacity: [0.92, 1, 0.92] }}
-      transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
-    >
-      <div
-        className={`flex items-center justify-between gap-2 rounded-[11px] bg-gradient-to-r px-2.5 py-1.5 ${v.gradient}`}
-      >
+    <div className={`relative overflow-hidden rounded-xl border border-white/35 bg-white/45 p-[1px] shadow-sm ${v.ring} ring-1`}>
+      <div className={`flex items-center justify-between gap-2 rounded-[11px] bg-gradient-to-r px-2.5 py-1.5 ${v.gradient}`}>
         <div className="flex items-center gap-2">
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-full text-base shadow-inner backdrop-blur-sm ${v.chip}`}
+            className={`flex h-7 w-7 items-center justify-center rounded-full text-base shadow-inner ${v.chip}`}
             aria-hidden
           >
             {v.icon}
@@ -77,8 +69,7 @@ export function MoodAura({ mood }: { mood: PetMood }) {
             <p className={`text-[9px] leading-tight ${v.sub}`}>{v.detail}</p>
           </div>
         </div>
-        <div className="pointer-events-none absolute -right-4 -top-6 h-14 w-14 rounded-full bg-white/25 blur-2xl" />
       </div>
-    </motion.div>
+    </div>
   );
 }
