@@ -188,7 +188,6 @@ export function PetCard() {
   const [previewItem, setPreviewItem] = useState<StoreItem | null>(null);
   const [stardustPulseNonce, setStardustPulseNonce] = useState(0);
   const [stardustFlights, setStardustFlights] = useState<StardustFlight[]>([]);
-  const [starDroplet, setStarDroplet] = useState<{ x: number; y: number } | null>(null);
   const boutiqueYmd = localCalendarYmd(new Date(nowTick));
   const { dailyItems, cosmicEgg, buyWithStardust, equipItem, openCosmicEgg } = useStore(
     playerMeta,
@@ -202,6 +201,11 @@ export function PetCard() {
   const [statsPanelOpen, setStatsPanelOpen] = useState(true);
   const [draggingPetTool, setDraggingPetTool] = useState(false);
   const reunionConsumedRef = useRef(false);
+  const stageLockedActions: CareAction[] =
+    pet.stage === "baby" ? ["play"] : pet.stage === "egg" ? ["feed", "sleep", "play", "clean"] : [];
+  const sickLockedActions: CareAction[] = isSick ? ["feed", "sleep", "play"] : [];
+  const lockedActions: CareAction[] = Array.from(new Set([...stageLockedActions, ...sickLockedActions]));
+  const isActionLocked = useCallback((action: CareAction) => lockedActions.includes(action), [lockedActions]);
 
   useInterval(() => {
     const foreground = typeof document !== "undefined" && !document.hidden && isPageVisible;
@@ -269,21 +273,32 @@ export function PetCard() {
     }
     const id = window.setInterval(() => {
       setCraving((c) => {
-        if (c && Date.now() < c.expiresAt) {
+        const now = Date.now();
+        if (c && now < c.expiresAt) {
           return c;
         }
-        if (c && Date.now() >= c.expiresAt) {
+        const availableCravingActions = (["feed", "sleep", "play", "clean"] as CareAction[]).filter((action) => !isActionLocked(action));
+        if (availableCravingActions.length === 0) {
           return null;
         }
         if (Math.random() < 0.28) {
-          const pick = randomCravingPick();
-          return { ...pick, expiresAt: Date.now() + 60_000 };
+          const pick = randomCravingPick(availableCravingActions);
+          return { ...pick, expiresAt: now + 28_000 };
         }
         return null;
       });
-    }, 40_000);
+    }, 24_000);
     return () => window.clearInterval(id);
-  }, [hasStarted, isReady, pet.stage, needsEggChoice]);
+  }, [hasStarted, isReady, pet.stage, needsEggChoice, isActionLocked]);
+
+  useEffect(() => {
+    if (!craving) {
+      return;
+    }
+    if (isActionLocked(craving.action) || pet.stage === "egg") {
+      setCraving(null);
+    }
+  }, [craving, isActionLocked, pet.stage]);
 
   useEffect(() => {
     if (!craving) {
@@ -301,7 +316,7 @@ export function PetCard() {
 
     const timer = setTimeout(() => {
       setCurrentScene("nursery");
-    }, 5_000);
+    }, 3_200);
 
     return () => clearTimeout(timer);
   }, [currentScene]);
@@ -706,12 +721,6 @@ export function PetCard() {
     }
   };
 
-  const stageLockedActions: CareAction[] =
-    pet.stage === "baby" ? ["play"] : pet.stage === "egg" ? ["feed", "sleep", "play", "clean"] : [];
-  const sickLockedActions: CareAction[] = isSick ? ["feed", "sleep", "play"] : [];
-  const lockedActions: CareAction[] = Array.from(new Set([...stageLockedActions, ...sickLockedActions]));
-  const isActionLocked = (action: CareAction) => lockedActions.includes(action);
-
   const runActivity = (action: FeedbackType) => {
     if (action !== "pet" && isActionLocked(action)) {
       return;
@@ -946,37 +955,6 @@ export function PetCard() {
     }
   }, [inputsLocked, grantStardust]);
 
-  useEffect(() => {
-    if (shouldHideMain || pet.stage === "egg") {
-      setStarDroplet(null);
-      return;
-    }
-    let cancelled = false;
-    let tid: number | undefined;
-    const arm = () => {
-      const ms = 42000 + Math.random() * 48000;
-      tid = window.setTimeout(() => {
-        if (cancelled) {
-          return;
-        }
-        const rect = creatureRef.current?.getBoundingClientRect();
-        if (rect) {
-          setStarDroplet({
-            x: rect.left + rect.width * (0.28 + Math.random() * 0.48),
-            y: rect.top + rect.height * (0.12 + Math.random() * 0.55)
-          });
-        }
-        arm();
-      }, ms);
-    };
-    arm();
-    return () => {
-      cancelled = true;
-      if (tid !== undefined) {
-        window.clearTimeout(tid);
-      }
-    };
-  }, [shouldHideMain, pet.stage]);
 
   return (
     <motion.section
@@ -1138,7 +1116,7 @@ export function PetCard() {
             <p className="text-center text-[10px] font-semibold text-slate-600/90">
               {pet.name} XP <span className="tabular-nums text-slate-800">{pet.xp}</span>
               <span className="mx-1.5 text-slate-400">·</span>
-              <span className="text-slate-500">Watch the glow — it softens when they need care</span>
+              <span className="text-slate-500">Keep stats high for the happiest mood</span>
             </p>
           )}
           </div>
@@ -1286,27 +1264,6 @@ export function PetCard() {
         ))}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {starDroplet && !shouldHideMain ? (
-          <motion.button
-            key="star-droplet"
-            type="button"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 320, damping: 22 }}
-            className="app-tap-target fixed z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-amber-200/60 bg-gradient-to-b from-amber-100/95 to-violet-100/90 text-lg shadow-[0_0_22px_rgba(251,191,36,0.55)]"
-            style={{ left: starDroplet.x, top: starDroplet.y, transform: "translate(-50%, -50%)" }}
-            aria-label="Collect star droplet"
-            onClick={() => {
-              grantStardust(2, starDroplet);
-              setStarDroplet(null);
-            }}
-          >
-            ✦
-          </motion.button>
-        ) : null}
-      </AnimatePresence>
 
       <AnimatePresence>
         {dailyToast && (

@@ -44,8 +44,9 @@ export type CravingPick = {
 };
 
 /** Random micro-craving for emotional "I want this now" moments. */
-export function randomCravingPick(): CravingPick {
-  const actions: CareAction[] = ["feed", "sleep", "play", "clean"];
+export function randomCravingPick(availableActions?: CareAction[]): CravingPick {
+  const actions: CareAction[] =
+    availableActions && availableActions.length > 0 ? availableActions : ["feed", "sleep", "play", "clean"];
   const action = actions[Math.floor(Math.random() * actions.length)]!;
   const list = ACTIVITY_SUBMENUS[action];
   const item = list[Math.floor(Math.random() * list.length)]!;

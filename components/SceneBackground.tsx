@@ -1,19 +1,17 @@
 "use client";
 
-import Image from "next/image";
-import { AnimatePresence, motion, useTransform, type MotionValue } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import type { PetMood } from "@/lib/game";
-import { useTiltParallax } from "@/hooks/useTiltParallax";
 
 /** Cinematic habitat scenes — background cross-fades on activity. */
 export type SceneState = "nursery" | "feed" | "sleep" | "play" | "clean";
 
 const sceneGradients: Record<SceneState, string> = {
-  nursery: "from-[#E8DDFF] via-[#E2D4FF] to-[#DBC4F9]",
-  feed: "from-[#ffe4f0] via-[#f5e6ff] to-[#DBC4F9]",
-  sleep: "from-[#0f172a] via-[#1e1b4b] to-[#172554]",
-  play: "from-[#d1fae5] via-[#a5f3fc] to-[#93c5fd]",
-  clean: "from-[#ccfbf1] via-[#e0f2fe] to-[#f0fdfa]"
+  nursery: "from-[#EAE1FF] via-[#E5DBFF] to-[#DCCCF8]",
+  feed: "from-[#FFE7F1] via-[#F8E9FF] to-[#E2D2FF]",
+  sleep: "from-[#0D1734] via-[#1A2558] to-[#101A3F]",
+  play: "from-[#CFF9EF] via-[#B8F3FF] to-[#C7E4FF]",
+  clean: "from-[#D6FCF6] via-[#E4F7FF] to-[#F4FCFF]"
 };
 
 function SceneParticles({ scene }: { scene: SceneState }) {
@@ -102,9 +100,18 @@ function MoodParticles({ mood }: { mood: PetMood }) {
   return null;
 }
 
-function resolveSceneClass(scene: SceneState): string {
-  return sceneGradients[scene];
-}
+const sceneAtmosphereClass: Record<SceneState, string> = {
+  nursery:
+    "bg-[radial-gradient(circle_at_50%_28%,rgba(255,255,255,0.34)_0%,rgba(255,255,255,0.1)_34%,rgba(186,162,255,0.08)_64%,transparent_100%)]",
+  feed:
+    "bg-[radial-gradient(circle_at_62%_24%,rgba(255,235,244,0.52)_0%,rgba(255,215,235,0.24)_30%,rgba(213,180,255,0.16)_58%,transparent_100%)]",
+  sleep:
+    "bg-[radial-gradient(circle_at_48%_18%,rgba(198,216,255,0.18)_0%,rgba(95,105,175,0.18)_32%,rgba(6,11,36,0.62)_82%,rgba(5,9,29,0.74)_100%)]",
+  play:
+    "bg-[radial-gradient(circle_at_35%_24%,rgba(229,255,246,0.4)_0%,rgba(166,243,255,0.22)_32%,rgba(126,190,255,0.16)_62%,transparent_100%)]",
+  clean:
+    "bg-[radial-gradient(circle_at_52%_22%,rgba(255,255,255,0.44)_0%,rgba(207,250,254,0.24)_32%,rgba(168,236,255,0.14)_60%,transparent_100%)]"
+};
 
 export function sceneDisplayName(scene: SceneState): string {
   const names: Record<SceneState, string> = {
@@ -115,108 +122,6 @@ export function sceneDisplayName(scene: SceneState): string {
     clean: "Clean"
   };
   return names[scene];
-}
-
-function NurseryParallaxDecor({
-  fgX,
-  fgY,
-  midX,
-  midY
-}: {
-  fgX: MotionValue<number>;
-  fgY: MotionValue<number>;
-  midX: MotionValue<number>;
-  midY: MotionValue<number>;
-}) {
-  return (
-    <>
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{ x: midX, y: midY }}
-        aria-hidden
-      >
-        {Array.from({ length: 14 }).map((_, idx) => (
-          <span
-            key={`n-star-${idx}`}
-            className="absolute text-lg text-white/55 drop-shadow-sm sm:text-xl"
-            style={{ left: `${4 + (idx * 17) % 88}%`, top: `${6 + (idx * 11) % 42}%` }}
-          >
-            ✦
-          </span>
-        ))}
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{ x: fgX, y: fgY }}
-        aria-hidden
-      >
-        {[
-          { left: "12%", top: "8%", emoji: "🪴" },
-          { left: "78%", top: "10%", emoji: "🫖" },
-          { left: "84%", top: "22%", emoji: "✨" }
-        ].map((pot, idx) => (
-          <span
-            key={`n-pot-${idx}`}
-            className="absolute text-2xl opacity-90 drop-shadow-md sm:text-3xl"
-            style={{ left: pot.left, top: pot.top }}
-          >
-            {pot.emoji}
-          </span>
-        ))}
-      </motion.div>
-    </>
-  );
-}
-
-function KitchenParallaxDecor({
-  fgX,
-  fgY,
-  midX,
-  midY
-}: {
-  fgX: MotionValue<number>;
-  fgY: MotionValue<number>;
-  midX: MotionValue<number>;
-  midY: MotionValue<number>;
-}) {
-  return (
-    <>
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{ x: midX, y: midY }}
-        aria-hidden
-      >
-        {Array.from({ length: 12 }).map((_, idx) => (
-          <span
-            key={`k-star-${idx}`}
-            className="absolute text-base text-amber-100/75 drop-shadow sm:text-lg"
-            style={{ left: `${5 + (idx * 19) % 90}%`, top: `${4 + (idx * 7) % 28}%` }}
-          >
-            ✦
-          </span>
-        ))}
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-0"
-        style={{ x: fgX, y: fgY }}
-        aria-hidden
-      >
-        {[
-          { left: "8%", top: "14%", emoji: "🪴" },
-          { left: "72%", top: "12%", emoji: "🍳" },
-          { left: "88%", top: "28%", emoji: "✨" }
-        ].map((pot, idx) => (
-          <span
-            key={`k-pot-${idx}`}
-            className="absolute text-2xl opacity-95 drop-shadow-lg sm:text-3xl"
-            style={{ left: pot.left, top: pot.top }}
-          >
-            {pot.emoji}
-          </span>
-        ))}
-      </motion.div>
-    </>
-  );
 }
 
 export function SceneBackground({
@@ -231,144 +136,54 @@ export function SceneBackground({
   /** Boutique room decor — preview or equipped. */
   roomDecorEmoji?: string | null;
 }) {
-  const gradientKey = currentScene;
-  const parallaxActive = currentScene === "nursery" || currentScene === "feed";
-  const tilt = useTiltParallax(parallaxActive);
-  const bgX = useTransform(tilt.x, (v) => v * 0.26);
-  const bgY = useTransform(tilt.y, (v) => v * 0.18);
-  const midX = useTransform(tilt.x, (v) => v * 0.62);
-  const midY = useTransform(tilt.y, (v) => v * 0.48);
-  const fgX = useTransform(tilt.x, (v) => v * 1.22);
-  const fgY = useTransform(tilt.y, (v) => v * 0.92);
-
-  const sceneEase = [0.4, 0, 0.2, 1] as const;
-  const sceneDuration = 1.35;
+  const sceneEase = [0.22, 1, 0.36, 1] as const;
+  const sceneDuration = 0.9;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         <motion.div
-          key={gradientKey}
-          className={`absolute inset-0 bg-gradient-to-b ${resolveSceneClass(currentScene)}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          key={`gradient-${currentScene}`}
+          className={`absolute inset-0 bg-gradient-to-b ${sceneGradients[currentScene]}`}
+          initial={{ opacity: 0, scale: 1.04 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.985 }}
+          transition={{ duration: sceneDuration, ease: sceneEase }}
+        />
+      </AnimatePresence>
+      <AnimatePresence mode="sync">
+        <motion.div
+          key={`atmosphere-${currentScene}`}
+          className={`absolute inset-0 ${sceneAtmosphereClass[currentScene]}`}
+          initial={{ opacity: 0, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: sceneDuration, ease: sceneEase }}
         />
       </AnimatePresence>
-      <AnimatePresence mode="wait">
-        {currentScene === "nursery" && (
-          <motion.div
-            key="scene-nursery"
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
-            transition={{ duration: sceneDuration, ease: sceneEase }}
-          >
-            <motion.div className="absolute inset-0" style={{ x: bgX, y: bgY }}>
-              <Image
-                src="/assets/idle.png"
-                alt=""
-                fill
-                priority
-                unoptimized
-                className="object-cover object-[center_38%] opacity-95 sm:object-center"
-              />
-            </motion.div>
-            <NurseryParallaxDecor fgX={fgX} fgY={fgY} midX={midX} midY={midY} />
-          </motion.div>
-        )}
-        {currentScene === "feed" && (
-          <motion.div
-            key="scene-feed"
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
-            transition={{ duration: sceneDuration, ease: sceneEase }}
-          >
-            {/* Full-bleed kitchen: wide art is cropped for portrait via object-cover + center bias (sink / star light). */}
-            <motion.div className="absolute inset-0" style={{ x: bgX, y: bgY }}>
-              <Image
-                src="/assets/kitchen.png"
-                alt=""
-                fill
-                priority
-                sizes="100vw"
-                unoptimized
-                className="object-cover object-[center_34%] sm:object-[center_36%]"
-              />
-            </motion.div>
-            <div
-              className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,248,252,0.35)_0%,transparent_28%,transparent_55%,rgba(30,27,75,0.12)_100%)]"
-              aria-hidden
-            />
-            <KitchenParallaxDecor fgX={fgX} fgY={fgY} midX={midX} midY={midY} />
-          </motion.div>
-        )}
-        {currentScene === "sleep" && (
-          <motion.div
-            key="scene-sleep"
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
-            transition={{ duration: sceneDuration, ease: sceneEase }}
-          >
-            <Image
-              src="/assets/bed_background.png"
-              alt=""
-              fill
-              unoptimized
-              className="object-cover object-[center_36%] opacity-70 sm:object-center"
-            />
-          </motion.div>
-        )}
-        {currentScene === "play" && (
-          <motion.div
-            key="scene-play"
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
-            transition={{ duration: sceneDuration, ease: sceneEase }}
-          >
-            <Image
-              src="/assets/nursery_background.png"
-              alt=""
-              fill
-              unoptimized
-              className="object-cover object-[center_38%] opacity-72 sm:object-center"
-            />
-          </motion.div>
-        )}
-        {currentScene === "clean" && (
-          <motion.div
-            key="scene-clean"
-            className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.01, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 1.008, filter: "blur(4px)" }}
-            transition={{ duration: sceneDuration, ease: sceneEase }}
-          >
-            <Image
-              src="/assets/bath_background.png"
-              alt=""
-              fill
-              unoptimized
-              className="object-cover object-[center_36%] opacity-72 sm:object-center"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-      {currentScene === "nursery" && (
+      <motion.div
+        className="absolute inset-0"
+        animate={{
+          background:
+            currentScene === "sleep"
+              ? "radial-gradient(circle_at_50%_25%, rgba(180,196,255,0.14), transparent 48%), linear-gradient(180deg, rgba(13,23,52,0.28), rgba(6,11,36,0.42))"
+              : currentScene === "feed"
+                ? "radial-gradient(circle_at_62%_28%, rgba(255,205,232,0.2), transparent 45%), linear-gradient(180deg, rgba(255,255,255,0.08), rgba(128,90,213,0.12))"
+                : currentScene === "play"
+                  ? "radial-gradient(circle_at_36%_26%, rgba(186,255,237,0.22), transparent 48%), linear-gradient(180deg, rgba(34,211,238,0.08), rgba(59,130,246,0.12))"
+                  : currentScene === "clean"
+                    ? "radial-gradient(circle_at_50%_24%, rgba(255,255,255,0.26), transparent 50%), linear-gradient(180deg, rgba(6,182,212,0.06), rgba(14,165,233,0.1))"
+                    : "radial-gradient(circle_at_50%_26%, rgba(255,255,255,0.2), transparent 48%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(167,139,250,0.1))"
+        }}
+        transition={{ duration: 1.2, ease: sceneEase }}
+      />
+      {currentScene === "nursery" ? (
         <motion.div
-          className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-fuchsia-300/20"
-          animate={{ opacity: [0.4, 0.65, 0.4] }}
-          transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute inset-0 bg-gradient-to-br from-white/22 via-transparent to-fuchsia-300/16"
+          animate={{ opacity: [0.28, 0.44, 0.28] }}
+          transition={{ duration: 8.5, repeat: Infinity, ease: "easeInOut" }}
         />
-      )}
+      ) : null}
       {currentScene === "nursery" && mood === "distressed" && (
         <motion.div
           className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(49,46,129,0.16),transparent_38%),linear-gradient(180deg,rgba(15,23,42,0.18),rgba(49,46,129,0.26))]"
@@ -383,6 +198,11 @@ export function SceneBackground({
           transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
         />
       )}
+      <motion.div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_50%_58%,rgba(255,255,255,0.16)_0%,transparent_52%)]"
+        animate={{ opacity: [0.45, 0.7, 0.45] }}
+        transition={{ duration: 6.4, repeat: Infinity, ease: "easeInOut" }}
+      />
       <SceneParticles scene={currentScene} />
       <MoodParticles mood={mood} />
       {roomDecorEmoji ? (
