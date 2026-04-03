@@ -11,6 +11,12 @@ type StardustGuideModalProps = {
   stage: PetStage;
 };
 
+/** One-time stardust when egg hatches — keep in sync with grant in PetCard */
+export const HATCH_STARDUST_BONUS = 15;
+
+/** First open each calendar day — keep in sync with daily grant in PetCard */
+export const DAILY_LOGIN_STARDUST = 8;
+
 export function StardustGuideModal({ open, onClose, petName, stage }: StardustGuideModalProps) {
   const afterHatch = stage !== "egg";
 
@@ -48,57 +54,67 @@ export function StardustGuideModal({ open, onClose, petName, stage }: StardustGu
                 <Sparkles className="h-5 w-5 text-violet-600" strokeWidth={2} />
               </div>
               <h2 id="stardust-guide-title" className="pr-8 text-lg font-bold tracking-tight text-indigo-950">
-                How stardust works
+                How you get stardust
               </h2>
             </div>
-            <p className="mb-3 text-sm font-medium leading-relaxed text-slate-700">
-              Stardust is your cosmic souvenir. Collect it over time — there’s no rush. Use it in the{" "}
-              <span className="font-semibold text-violet-800">boutique</span> (tap the{" "}
-              <span className="font-semibold">+</span> or the <span className="font-semibold">bag</span> in the top bar).
+            <p className="mb-3 text-xs font-medium text-slate-600">
+              Spend it in the <span className="font-semibold text-violet-800">shop</span> — tap the{" "}
+              <span className="font-semibold">bag</span> icon next to the memory book.
             </p>
-            <ul className="space-y-2.5 text-sm text-slate-700">
+            <ul className="space-y-3 text-sm leading-snug text-slate-800">
               <li className="flex gap-2">
-                <span className="mt-0.5 shrink-0 text-violet-500" aria-hidden>
-                  ✦
+                <span className="mt-0.5 shrink-0 font-bold text-violet-600" aria-hidden>
+                  1.
                 </span>
                 <span>
-                  <span className="font-semibold text-slate-900">Daily visit</span> — the first time you open the game
-                  each day, you get a login bonus of stardust.
+                  <span className="font-semibold">First time you open the game each calendar day</span>, you get{" "}
+                  <span className="font-semibold">+{DAILY_LOGIN_STARDUST} stardust</span> automatically. Opening again the same
+                  day does not add more.
+                </span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-0.5 shrink-0 font-bold text-violet-600" aria-hidden>
+                  2.
+                </span>
+                <span>
+                  <span className="font-semibold">When your egg hatches</span> you get a{" "}
+                  <span className="font-semibold">one-time +{HATCH_STARDUST_BONUS} stardust</span> welcome gift.
                 </span>
               </li>
               {afterHatch ? (
-                <li className="flex gap-2">
-                  <span className="mt-0.5 shrink-0 text-violet-500" aria-hidden>
-                    ✦
-                  </span>
-                  <span>
-                    <span className="font-semibold text-slate-900">Hold {petName}</span> — press and hold your companion
-                    on the screen. You earn about <span className="font-semibold">1 stardust every 5 seconds</span> while
-                    you keep holding.
-                  </span>
-                </li>
+                <>
+                  <li className="flex gap-2">
+                    <span className="mt-0.5 shrink-0 font-bold text-violet-600" aria-hidden>
+                      3.
+                    </span>
+                    <span>
+                      <span className="font-semibold">Press and hold {petName}</span> on the screen (not a quick tap).
+                      Every <span className="font-semibold">5 seconds</span> you keep holding, you get{" "}
+                      <span className="font-semibold">+1 stardust</span>.
+                    </span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="mt-0.5 shrink-0 font-bold text-violet-600" aria-hidden>
+                      4.
+                    </span>
+                    <span>
+                      When a glowing <span className="font-semibold">✦</span> appears near {petName},{" "}
+                      <span className="font-semibold">tap it</span> — you get <span className="font-semibold">+2 stardust</span>{" "}
+                      each time.
+                    </span>
+                  </li>
+                </>
               ) : (
                 <li className="flex gap-2">
-                  <span className="mt-0.5 shrink-0 text-violet-500" aria-hidden>
-                    ✦
+                  <span className="mt-0.5 shrink-0 font-bold text-violet-600" aria-hidden>
+                    3.
                   </span>
                   <span>
-                    <span className="font-semibold text-slate-900">After hatch</span> — you’ll also earn stardust by
-                    holding {petName} and by catching sparkles (see below).
+                    After hatch: <span className="font-semibold">hold {petName}</span> for +1 stardust every 5 seconds, and{" "}
+                    <span className="font-semibold">tap ✦</span> sparkles for +2 each.
                   </span>
                 </li>
               )}
-              {afterHatch ? (
-                <li className="flex gap-2">
-                  <span className="mt-0.5 shrink-0 text-violet-500" aria-hidden>
-                    ✦
-                  </span>
-                  <span>
-                    <span className="font-semibold text-slate-900">Star droplets</span> — sometimes a glowing{" "}
-                    <span className="font-semibold">✦</span> appears near {petName}. Tap it to collect bonus stardust.
-                  </span>
-                </li>
-              ) : null}
             </ul>
             <button
               type="button"

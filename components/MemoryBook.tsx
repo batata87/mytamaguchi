@@ -60,7 +60,7 @@ export function MemoryBook({ open, onClose, memoryKeys, stardust, careStyleNote 
               <span className="font-semibold text-amber-200">Stardust</span> adds up from your first visit each day, from{" "}
               <span className="font-medium text-white/85">pressing and holding</span> your companion (after hatch), and from{" "}
               <span className="font-medium text-white/85">tapping glowing ✦</span> when they appear. Total here:{" "}
-              <span className="font-semibold text-amber-200">{stardust}</span>. Spend it in the boutique (header + or bag).
+              <span className="font-semibold text-amber-200">{stardust}</span>. Spend it in the shop — tap the bag in the top bar.
             </p>
             {careStyleNote ? (
               <p className="mb-3 text-[11px] text-white/55">

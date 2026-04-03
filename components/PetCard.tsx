@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, MapPin, ShoppingBag } from "lucide-react";
+import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, ShoppingBag } from "lucide-react";
 import { ChooseEggScreen } from "@/components/ChooseEggScreen";
 import { NameCreatureScreen } from "@/components/NameCreatureScreen";
 import { CreatureStage } from "@/components/CreatureStage";
@@ -13,8 +13,8 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { MemoryBook } from "@/components/MemoryBook";
 import { Boutique } from "@/components/Boutique";
 import { StardustCounter } from "@/components/StardustCounter";
-import { StardustGuideModal } from "@/components/StardustGuideModal";
-import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
+import { DAILY_LOGIN_STARDUST, HATCH_STARDUST_BONUS, StardustGuideModal } from "@/components/StardustGuideModal";
+import { SceneBackground, type SceneState } from "@/components/SceneBackground";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
 import { randomCravingPick } from "@/lib/activitySubmenus";
@@ -241,7 +241,7 @@ export function PetCard() {
       return;
     }
 
-    const next = { ...meta, lastDailyGiftYmd: today, stardust: meta.stardust + 8 };
+    const next = { ...meta, lastDailyGiftYmd: today, stardust: meta.stardust + DAILY_LOGIN_STARDUST };
     savePlayerMeta(next);
     setPlayerMeta(next);
     setStardustPulseNonce((n) => n + 1);
@@ -251,11 +251,11 @@ export function PetCard() {
     setDailyToast(
       reunited
         ? {
-            title: "Welcome back! +8 stardust added.",
+            title: `Welcome back! +${DAILY_LOGIN_STARDUST} stardust added.`,
             detail: stardustDetail
           }
         : {
-            title: "Daily login: +8 stardust",
+            title: `Daily login: +${DAILY_LOGIN_STARDUST} stardust`,
             detail: stardustDetail
           }
     );
@@ -628,6 +628,12 @@ export function PetCard() {
     await new Promise((resolve) => setTimeout(resolve, 260));
     setUseDefaultBabyAsset(true);
     setStage("baby", XP_HATCH_TARGET, { silent: true });
+    setPlayerMeta((m) => {
+      const next = { ...m, stardust: m.stardust + HATCH_STARDUST_BONUS };
+      savePlayerMeta(next);
+      return next;
+    });
+    setStardustPulseNonce((n) => n + 1);
     await triggerSchoolPrideBurst();
     setCurrentScene("nursery");
     setTimeout(() => {
@@ -1045,7 +1051,6 @@ export function PetCard() {
               <StardustCounter
                 ref={stardustCounterRef}
                 amount={playerMeta.stardust}
-                onOpenShop={() => setBoutiqueOpen(true)}
                 onOpenInfo={() => setStardustInfoOpen(true)}
                 pulseNonce={stardustPulseNonce}
               />
@@ -1374,17 +1379,6 @@ export function PetCard() {
                   : `Healing in progress: ${Math.round(healProgressPct)}% • ~${healRemainingLabel} left`
                 : `${pet.name} is sick. Use Star Elixir to begin treatment.`
               : `Drag activities onto your companion. More options unlock as ${pet.name} grows.`}
-          {pet.stage !== "egg" && !isSick ? (
-            <p className="mt-1 text-[9px] font-medium leading-snug text-violet-900/85">
-              ✦ Stardust: daily login • press and hold {pet.name} • tap glowing ✦ — details in Memory Book.
-            </p>
-          ) : null}
-          <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
-            <MapPin size={12} className="shrink-0 opacity-80" aria-hidden />
-            <span>
-              Room: <span className="font-semibold">{sceneDisplayName(currentScene)}</span>
-            </span>
-          </div>
         </div>
       </footer>
       <AnimatePresence>

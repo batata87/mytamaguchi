@@ -267,21 +267,21 @@ function vitalityAuraStyle(avg: number): { background: string; boxShadow: string
   const pulse = 0.42 + t * 0.38;
   if (t < 0.38) {
     return {
-      background: `radial-gradient(circle, rgba(251,113,133,${0.28 + t * 0.15}) 0%, rgba(168,85,247,0.12) 55%, transparent 72%)`,
-      boxShadow: `0 0 70px rgba(251,113,133,${0.25 + t * 0.25}), 0 0 120px rgba(244,63,94,${0.12 + t * 0.1})`,
-      opacity: 0.38 + t * 0.25
+      background: `radial-gradient(circle, rgba(251,113,133,${0.18 + t * 0.12}) 0%, rgba(168,85,247,0.07) 42%, transparent 84%)`,
+      boxShadow: `0 0 90px rgba(251,113,133,${0.1 + t * 0.08})`,
+      opacity: 0.42 + t * 0.28
     };
   }
   if (t < 0.72) {
     return {
-      background: `radial-gradient(circle, rgba(251,191,36,${0.22 + (t - 0.38) * 0.2}) 0%, rgba(253,186,116,0.14) 50%, transparent 70%)`,
-      boxShadow: `0 0 64px rgba(245,158,11,${0.22 + (t - 0.38) * 0.3})`,
-      opacity: 0.48 + (t - 0.38) * 0.35
+      background: `radial-gradient(circle, rgba(251,191,36,${0.16 + (t - 0.38) * 0.16}) 0%, rgba(253,186,116,0.09) 40%, transparent 84%)`,
+      boxShadow: `0 0 88px rgba(245,158,11,${0.12 + (t - 0.38) * 0.18})`,
+      opacity: 0.5 + (t - 0.38) * 0.32
     };
   }
   return {
-    background: `radial-gradient(circle, rgba(52,211,153,${0.28 + (t - 0.72) * 0.25}) 0%, rgba(34,211,238,0.12) 55%, transparent 72%)`,
-    boxShadow: `0 0 72px rgba(16,185,129,${0.35 + (t - 0.72) * 0.25}), 0 0 100px rgba(45,212,191,${0.15 + (t - 0.72) * 0.2})`,
+    background: `radial-gradient(circle, rgba(52,211,153,${0.2 + (t - 0.72) * 0.2}) 0%, rgba(34,211,238,0.08) 42%, transparent 84%)`,
+    boxShadow: `0 0 96px rgba(16,185,129,${0.14 + (t - 0.72) * 0.2})`,
     opacity: pulse
   };
 }
@@ -291,18 +291,21 @@ function CravingBubble({ craving, now }: { craving: NonNullable<ActiveCraving>; 
   const secs = Math.ceil(leftMs / 1000);
   return (
     <motion.div
-      className="pointer-events-none absolute left-1/2 top-0 z-40 -translate-x-1/2 -translate-y-full px-2"
-      initial={{ opacity: 0, y: 6, scale: 0.92 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -4 }}
+      className="pointer-events-none relative z-40 max-w-[8.75rem] shrink-0"
+      initial={{ opacity: 0, x: 12, scale: 0.94 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 8 }}
     >
-      <div className="relative rounded-2xl border border-amber-200/50 bg-amber-50/95 px-3 py-2 text-center shadow-lg">
+      <div className="relative rounded-2xl border border-amber-200/50 bg-amber-50/95 px-2.5 py-1.5 text-left shadow-lg">
+        <div
+          className="absolute left-0 top-1/2 z-10 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-l border-amber-200/50 bg-amber-50/95"
+          aria-hidden
+        />
         <p className="text-[9px] font-bold uppercase tracking-wide text-amber-900/80">Craving</p>
-        <p className="text-sm font-semibold text-amber-950">
+        <p className="text-xs font-semibold leading-tight text-amber-950">
           {craving.emoji} {craving.label}
         </p>
         <p className="text-[10px] text-amber-900/70">{secs}s</p>
-        <div className="absolute -bottom-1.5 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-amber-200/50 bg-amber-50/95" />
       </div>
     </motion.div>
   );
@@ -413,21 +416,30 @@ export function CreatureStage({
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
       <motion.div
-        className="absolute top-[58%] h-48 w-60 -translate-y-1/2 rounded-full blur-3xl"
-        style={{ background: aura.background, boxShadow: aura.boxShadow }}
+        className="pointer-events-none absolute left-1/2 top-[58%] aspect-square w-[min(92vmin,320px)] max-w-[min(92vmin,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[72px] sm:blur-[96px]"
+        style={{
+          background: aura.background,
+          boxShadow: aura.boxShadow,
+          maskImage: "radial-gradient(closest-side, black 0%, black 32%, transparent 72%)",
+          WebkitMaskImage: "radial-gradient(closest-side, black 0%, black 32%, transparent 72%)"
+        }}
         animate={{
-          scale: [1, 1.08, 1],
-          opacity: [auraBreath * 0.85, auraBreath, auraBreath * 0.88]
+          scale: [1, 1.06, 1],
+          opacity: [auraBreath * 0.88, auraBreath, auraBreath * 0.9]
         }}
         transition={{ duration: 4.2 + (100 - avgVitality) * 0.02, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        className="absolute top-[58%] h-36 w-44 -translate-y-1/2 rounded-full bg-white/10 blur-2xl"
-        animate={{ scale: [1, 1.06, 1], opacity: [0.25, 0.42, 0.28] }}
+        className="pointer-events-none absolute left-1/2 top-[58%] aspect-square w-[min(72vmin,240px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/12 blur-[52px] sm:blur-[64px]"
+        style={{
+          maskImage: "radial-gradient(circle, black 36%, transparent 78%)",
+          WebkitMaskImage: "radial-gradient(circle, black 36%, transparent 78%)"
+        }}
+        animate={{ scale: [1, 1.05, 1], opacity: [0.22, 0.38, 0.26] }}
         transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
       />
       {stage !== "egg" && !isSick && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pt-1 pr-1 sm:pr-4">
           <AnimatePresence>
             {craving && <CravingBubble craving={craving} now={nowTick} key="craving" />}
           </AnimatePresence>
