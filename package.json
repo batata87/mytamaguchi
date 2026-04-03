@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "assets:cleanup": "node scripts/cleanup-assets.mjs"
+    "assets:cleanup": "node scripts/cleanup-assets.mjs",
+    "assets:poop": "node scripts/process-poop-asset.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.0",

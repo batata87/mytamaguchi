@@ -23,8 +23,8 @@ type CreatureStageProps = {
   /** Hunger low: lean toward feed / "puppy eyes" plea */
   pleadForFood: boolean;
   craving: ActiveCraving;
-  /** Average of hunger/energy/joy/hygiene (0–100) — drives outer aura color and brightness. */
-  avgVitality: number;
+  /** Floor mess — cleared by Clean; drives hygiene pressure in parent. */
+  poopIds: string[];
   /** Pet tool menu open: subtle “ready for pets” look before touch. */
   petToolPrimed: boolean;
   /** Increment to replay a one-shot happy dance (e.g. craving fulfilled). */
@@ -294,6 +294,7 @@ export function CreatureStage({
   hunger,
   pleadForFood,
   craving,
+  poopIds,
   petToolPrimed,
   happyDanceNonce,
   feedSquashNonce,
@@ -462,6 +463,32 @@ export function CreatureStage({
               )}
               <PleadingOverlay active={pleadForFood && !isSick} hunger={hunger} />
               <ReactionOverlay activityReaction={activityReaction} />
+              {poopIds.length > 0 ? (
+                <div className="pointer-events-none absolute -bottom-[6%] left-1/2 z-[15] flex max-w-[min(100%,200px)] -translate-x-1/2 items-end justify-center gap-0.5 sm:-bottom-[4%]">
+                  <AnimatePresence>
+                    {poopIds.map((id) => (
+                      <motion.div
+                        key={id}
+                        initial={{ opacity: 0, scale: 0.45, y: 14 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.75, y: 8 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                        className="w-[40px] shrink-0 sm:w-[48px]"
+                        aria-hidden
+                      >
+                        <Image
+                          src="/assets/poop.png"
+                          alt=""
+                          width={72}
+                          height={72}
+                          className="h-auto w-full object-contain drop-shadow-[0_4px_10px_rgba(15,23,42,0.35)]"
+                          unoptimized
+                        />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              ) : null}
               <motion.div
                 key={feedSquashNonce}
                 className="relative inline-block"

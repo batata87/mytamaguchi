@@ -48,6 +48,7 @@ const EGG_CYCLE_STORAGE_KEY = "bia-egg-cycle-v1";
 const HEAL_CYCLE_STORAGE_KEY = "bia-heal-cycle-v1";
 const EGG_HATCH_DURATION_MS = 36 * 60 * 60 * 1000; // 1.5 days
 const HEAL_DURATION_MS = 6 * 60 * 60 * 1000; // 6 hours
+const POOP_MAX = 3;
 
 type Particle = {
   id: number;
@@ -150,6 +151,7 @@ export function PetCard() {
   const awaitingStarterName = isReady && hasStarted && !needsEggChoice && pet.hasChosenStarterName === false;
   const shouldHideMain =
     !isReady || !hasStarted || (hasStarted && needsEggChoice) || awaitingStarterName;
+  const eligibleForPoop = !shouldHideMain && pet.stage !== "egg" && !isSick && isPageVisible;
 
   useHungerNotification({
     pet,
@@ -200,6 +202,10 @@ export function PetCard() {
   const [feedSquashNonce, setFeedSquashNonce] = useState(0);
   const [statsPanelOpen, setStatsPanelOpen] = useState(true);
   const [draggingPetTool, setDraggingPetTool] = useState(false);
+  const [poopIds, setPoopIds] = useState<string[]>([]);
+  const poopTimerRef = useRef<number | null>(null);
+  const feedPoopTimerRef = useRef<number | null>(null);
+  const poopCountRef = useRef(0);
   const reunionConsumedRef = useRef(false);
   const stageLockedActions: CareAction[] =
     pet.stage === "baby" ? ["play"] : pet.stage === "egg" ? ["feed", "sleep", "play", "clean"] : [];
@@ -211,6 +217,62 @@ export function PetCard() {
     const foreground = typeof document !== "undefined" && !document.hidden && isPageVisible;
     tickDecay(foreground);
   }, 60_000);
+
+  useEffect(() => {
+    poopCountRef.current = poopIds.length;
+  }, [poopIds.length]);
+
+  useEffect(() => {
+    if (pet.stage === "egg" || isSick) {
+      setPoopIds([]);
+    }
+  }, [pet.stage, isSick]);
+
+  useEffect(() => {
+    if (!eligibleForPoop) {
+      if (poopTimerRef.current != null) {
+        window.clearTimeout(poopTimerRef.current);
+        poopTimerRef.current = null;
+      }
+      return;
+    }
+    const schedule = () => {
+      poopTimerRef.current = window.setTimeout(() => {
+        setPoopIds((prev) => {
+          if (prev.length >= POOP_MAX) return prev;
+          return [...prev, `poop-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`];
+        });
+        schedule();
+      }, 11 * 60 * 1000 + Math.random() * 9 * 60 * 1000);
+    };
+    schedule();
+    return () => {
+      if (poopTimerRef.current != null) {
+        window.clearTimeout(poopTimerRef.current);
+        poopTimerRef.current = null;
+      }
+    };
+  }, [eligibleForPoop]);
+
+  useEffect(() => {
+    if (!eligibleForPoop) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      const n = poopCountRef.current;
+      if (n <= 0) return;
+      applyStatDelta({ hygiene: -Math.min(3, n) }, 0);
+    }, 2.5 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, [eligibleForPoop, applyStatDelta]);
+
+  useEffect(() => {
+    return () => {
+      if (feedPoopTimerRef.current != null) {
+        window.clearTimeout(feedPoopTimerRef.current);
+      }
+    };
+  }, []);
 
   /**
    * Welcome back (4h+ away): reunion animation + confetti, then daily login stardust when eligible.
@@ -730,6 +792,16 @@ export function PetCard() {
       setCurrentScene("feed");
       flashStat("hunger");
       setFeedSquashNonce((n) => n + 1);
+      if (feedPoopTimerRef.current != null) {
+        window.clearTimeout(feedPoopTimerRef.current);
+      }
+      feedPoopTimerRef.current = window.setTimeout(() => {
+        setPoopIds((prev) => {
+          if (prev.length >= POOP_MAX) return prev;
+          return [...prev, `poop-feed-${Date.now()}`];
+        });
+        feedPoopTimerRef.current = null;
+      }, 4.5 * 60 * 1000 + Math.random() * 3.5 * 60 * 1000);
     }
 
     if (action === "sleep") {
@@ -823,6 +895,11 @@ export function PetCard() {
       setHappyDanceNonce((n) => n + 1);
     }
 
+    const hadPoop = poopIds.length > 0;
+    if (action === "clean") {
+      setPoopIds([]);
+    }
+
     setPlayerMeta((m) => {
       let next = { ...m };
       if (!next.memoryKeys.includes(memoryKey)) {
@@ -842,6 +919,9 @@ export function PetCard() {
     runActivity(action);
     if (cravingMatch) {
       applyStatDelta({ joy: 22 }, 28);
+    }
+    if (action === "clean" && hadPoop) {
+      applyStatDelta({ joy: 6 }, 5);
     }
     setPetJumpKey((prev) => prev + 1);
     window.setTimeout(() => {
@@ -891,7 +971,6 @@ export function PetCard() {
   }, [pet.stage]);
 
   const careStylePill = careStyleLabel(deriveCareStyle(playerMeta));
-  const avgVitality = (pet.hunger + pet.energy + pet.joy + pet.hygiene) / 4;
   const cravingForStage =
     craving && pet.stage !== "egg"
       ? { label: craving.label, emoji: craving.emoji, expiresAt: craving.expiresAt }
@@ -1142,7 +1221,7 @@ export function PetCard() {
                 hunger={pet.hunger}
                 pleadForFood={pleadForFood}
                 craving={cravingForStage}
-                avgVitality={avgVitality}
+                poopIds={poopIds}
                 petToolPrimed={draggingPetTool}
                 happyDanceNonce={happyDanceNonce}
                 feedSquashNonce={feedSquashNonce}
@@ -1335,7 +1414,9 @@ export function PetCard() {
                   ? "Healing complete. Drop Star Elixir to stabilize now."
                   : `Healing in progress: ${Math.round(healProgressPct)}% • ~${healRemainingLabel} left`
                 : `${pet.name} is sick. Use Star Elixir to begin treatment.`
-              : `Drag activities onto your companion. More options unlock as ${pet.name} grows.`}
+              : poopIds.length > 0
+                ? `Mess nearby — drag Clean onto ${pet.name} to tidy up.`
+                : `Drag activities onto your companion. More options unlock as ${pet.name} grows.`}
         </div>
       </footer>
       <AnimatePresence>
