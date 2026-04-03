@@ -283,9 +283,9 @@ export function Sidebar({
       <div className="flex w-full max-w-[min(100%,520px)] flex-col gap-2 sm:w-auto sm:max-w-none sm:gap-3">
       {isEgg && (
         <>
-          <div className="rounded-2xl border border-amber-400/50 bg-amber-100/20 px-3 py-2 shadow-lg shadow-amber-900/10 backdrop-blur-sm">
+          <div className="rounded-2xl border border-amber-400/55 bg-amber-50/95 px-3 py-2 shadow-lg shadow-amber-900/15 backdrop-blur-md">
             <p className="text-center text-[9px] font-extrabold uppercase leading-tight tracking-wide text-amber-950">Heat the egg</p>
-            <p className="mt-0.5 text-center text-[9px] font-medium leading-snug text-amber-950/90">Heat the egg by tapping it</p>
+            <p className="mt-0.5 text-center text-[9px] font-medium leading-snug text-amber-950/90">Tap the egg to warm it faster</p>
           </div>
         </>
       )}

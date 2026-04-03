@@ -1407,7 +1407,7 @@ export function PetCard() {
           {pet.stage === "egg"
             ? eggIsReadyByTime
               ? "Egg is warm enough. Keep caring to trigger hatch."
-              : `Heat the egg by tapping it • Warmth ${Math.round(eggProgressPct)}% • Ready in ~${eggRemainingLabel}`
+              : `Warmth ${Math.round(eggProgressPct)}% • Ready in ~${eggRemainingLabel}`
             : isSick
               ? healCycle
                 ? healIsReady
