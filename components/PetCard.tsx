@@ -931,16 +931,16 @@ export function PetCard() {
   };
 
   const showFlash = screenFlashTone !== null || hatchPhase === "flash";
-  const creatureTopClass =
-    statsPanelOpen
-      ? pet.stage === "egg"
-        ? "top-[61%] sm:top-[51%]"
-        : "top-[64%] sm:top-[51%]"
-      : pet.stage === "egg"
-        ? "top-[53%] sm:top-[46%]"
-        : "top-[56%] sm:top-[46%]";
+  /** Reserve space under header / above activities so squash/stretch never clips the sprite. */
+  const creatureStageContainerClass = statsPanelOpen
+    ? pet.stage === "egg"
+      ? "top-[clamp(13.5rem,34vh,20rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(12rem,30vh,18rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+      : "top-[clamp(14rem,36vh,21rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(12.5rem,32vh,19rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+    : pet.stage === "egg"
+      ? "top-[clamp(11.5rem,28vh,17rem)] bottom-[clamp(9.5rem,32vh,17rem)] sm:top-[clamp(10rem,26vh,16rem)] sm:bottom-[clamp(8.5rem,30vh,16rem)]"
+      : "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(9rem,30vh,16rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(8rem,28vh,15rem)]";
   const creatureSizeClass =
-    pet.stage === "egg" ? "h-[172px] w-[172px] sm:h-[280px] sm:w-[280px]" : "h-[180px] w-[180px] sm:h-[280px] sm:w-[280px]";
+    "relative flex max-h-full w-full max-w-[min(100vw-1.5rem,340px)] flex-shrink-0 items-center justify-center overflow-visible px-2 py-6 sm:px-4 sm:py-10";
 
   const actionFeedbackIcon = {
     feed: "💖",
@@ -1233,10 +1233,10 @@ export function PetCard() {
               </div>
             </>
           ) : (
-            <p className="text-center text-[10px] font-semibold text-slate-600/90">
-              {pet.name} XP <span className="tabular-nums text-slate-800">{pet.xp}</span>
-              <span className="mx-1.5 text-slate-400">·</span>
-              <span className="text-slate-500">Keep stats high for the happiest mood</span>
+            <p className="text-center text-[10px] font-semibold leading-snug text-slate-700">
+              {pet.name} XP <span className="tabular-nums text-slate-900">{pet.xp}</span>
+              <span className="mx-1.5 text-slate-500">·</span>
+              <span className="text-slate-600">Keep stats high for the happiest mood</span>
             </p>
           )}
           </div>
@@ -1251,7 +1251,7 @@ export function PetCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0.88 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
-            className={`pointer-events-none fixed inset-x-0 ${creatureTopClass} z-20 flex -translate-y-1/2 items-center justify-center`}
+            className={`pointer-events-none fixed inset-x-0 z-20 flex items-center justify-center overflow-visible ${creatureStageContainerClass}`}
           >
             <div ref={creatureRef} className={`pointer-events-auto ${creatureSizeClass}`}>
               <CreatureStage

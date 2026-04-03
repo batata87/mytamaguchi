@@ -110,7 +110,7 @@ function EggStateArt({ src }: { src: string }) {
       alt="Egg stage"
       width={260}
       height={260}
-      className="h-44 w-44 object-contain sm:h-60 sm:w-60"
+      className="h-44 w-44 object-contain overflow-visible sm:h-60 sm:w-60"
       unoptimized
       priority
     />
@@ -124,7 +124,7 @@ function DefaultBabyArt() {
       alt="Default baby pet"
       width={260}
       height={260}
-      className="h-52 w-52 object-contain"
+      className="h-52 w-52 object-contain overflow-visible"
       unoptimized
       priority
     />
@@ -136,7 +136,9 @@ function CreatureSprite({ stage }: { stage: Exclude<PetStage, "egg"> }) {
     stage === "baby" ? "/assets/stage3_baby.png" : stage === "teen" ? "/assets/stage4_medium.png" : "/assets/stage5_adult.png";
   const sizeClass = stage === "adult" ? "h-56 w-72" : "h-52 w-52";
 
-  return <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain`} unoptimized priority />;
+  return (
+    <Image src={src} alt={`${stage} creature`} width={320} height={320} className={`${sizeClass} object-contain overflow-visible`} unoptimized priority />
+  );
 }
 
 function SickCreatureArt() {
@@ -146,7 +148,7 @@ function SickCreatureArt() {
       alt="Sick creature"
       width={320}
       height={320}
-      className="h-56 w-56 object-contain"
+      className="h-56 w-56 object-contain overflow-visible"
       unoptimized
       priority
     />
@@ -581,7 +583,7 @@ export function CreatureStage({
   };
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center overflow-visible px-2 sm:px-4">
+    <div className="relative flex h-auto min-h-0 w-full max-w-[min(100%,340px)] items-center justify-center overflow-visible px-2 py-1 sm:px-4 sm:py-2">
       {stage !== "egg" && !isSick && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pt-1 pr-1 sm:pr-4">
           <AnimatePresence>
@@ -677,6 +679,15 @@ export function CreatureStage({
                     : { duration: breatheDuration, ease: "easeInOut", repeat: Infinity }
               }
             >
+              <motion.div
+                className="relative"
+                animate={
+                  fingerScreen && !isSick
+                    ? { x: eyeGaze.ox * 0.5, y: eyeGaze.oy * 0.42 }
+                    : { x: 0, y: 0 }
+                }
+                transition={{ type: "spring", stiffness: 120, damping: 22, mass: 0.45 }}
+              >
               {petToolPrimed && !isSick && (
                 <div
                   className="pointer-events-none absolute left-1/2 top-[10%] z-20 -translate-x-1/2 text-2xl opacity-95 drop-shadow-md"
@@ -694,20 +705,6 @@ export function CreatureStage({
                 >
                   🧘
                 </div>
-              )}
-              {!isSick && (
-                <div
-                  className="pointer-events-none absolute left-[31%] top-[28%] z-[24] h-2 w-2 rounded-full bg-slate-900/85 sm:left-[32%] sm:top-[29%]"
-                  style={{ transform: `translate(${eyeGaze.ox}px, ${eyeGaze.oy}px)` }}
-                  aria-hidden
-                />
-              )}
-              {!isSick && (
-                <div
-                  className="pointer-events-none absolute right-[31%] top-[28%] z-[24] h-2 w-2 rounded-full bg-slate-900/85 sm:right-[32%] sm:top-[29%]"
-                  style={{ transform: `translate(${eyeGaze.ox}px, ${eyeGaze.oy}px)` }}
-                  aria-hidden
-                />
               )}
               {poopIds.length > 0 ? (
                 <div className="pointer-events-none absolute -bottom-[6%] left-1/2 z-[15] flex max-w-[min(100%,200px)] -translate-x-1/2 items-end justify-center gap-0.5 sm:-bottom-[4%]">
@@ -777,18 +774,19 @@ export function CreatureStage({
                 </AnimatePresence>
               </motion.div>
               </motion.div>
+              {cosmeticHatEmoji ? (
+                <div
+                  className="pointer-events-none absolute left-1/2 top-[6%] z-50 -translate-x-1/2 text-[2.6rem] leading-none sm:text-[2.85rem]"
+                  style={{ filter: "none" }}
+                  aria-hidden
+                >
+                  {cosmeticHatEmoji}
+                </div>
+              ) : null}
+              </motion.div>
             </motion.div>
           )}
         </motion.div>
-        {cosmeticHatEmoji ? (
-          <div
-            className="pointer-events-none absolute left-1/2 top-[6%] z-50 -translate-x-1/2 text-[2.6rem] leading-none sm:text-[2.85rem]"
-            style={{ filter: "none" }}
-            aria-hidden
-          >
-            {cosmeticHatEmoji}
-          </div>
-        ) : null}
         </motion.div>
         </motion.div>
         </motion.div>

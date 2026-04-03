@@ -77,11 +77,11 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                   key={isCurrent ? `${step.id}-${twinkleKey}` : step.id}
                   className={`relative flex items-center justify-center overflow-hidden rounded-full border ${
                     isCurrent
-                      ? "h-10 w-10 border-white/85 bg-white/20 shadow-[0_0_18px_rgba(255,255,255,0.35)]"
+                      ? "h-10 w-10 border-violet-400/80 bg-violet-50 shadow-[0_2px_12px_rgba(124,58,237,0.18)]"
                       : isDone
-                        ? "h-8 w-8 border-white/55 bg-white/12"
-                        : "h-8 w-8 border-white/20 bg-white/5"
-                  } ${isDone ? "drop-shadow-[0_0_10px_rgba(255,255,255,0.45)]" : ""}`}
+                        ? "h-8 w-8 border-emerald-300/90 bg-emerald-50"
+                        : "h-8 w-8 border-slate-200 bg-slate-50"
+                  }`}
                   animate={
                     isCurrent
                       ? {
@@ -109,10 +109,10 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                   <Star
                     className={`relative z-[1] ${
                       isDone
-                        ? "fill-white text-white"
+                        ? "fill-emerald-500 text-emerald-600"
                         : isCurrent
-                          ? "fill-white/95 text-white"
-                          : "fill-transparent text-white/35"
+                          ? "fill-violet-400 text-violet-600"
+                          : "fill-transparent text-slate-400"
                     }`}
                     size={isCurrent ? 22 : 16}
                     strokeWidth={1.8}
@@ -120,7 +120,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                 </motion.div>
                 <span
                   className={`text-[8px] font-semibold uppercase tracking-[0.12em] ${
-                    isCurrent ? "text-white/92" : isDone ? "text-white/72" : "text-white/40"
+                    isCurrent ? "text-slate-900" : isDone ? "text-slate-700" : "text-slate-500"
                   }`}
                 >
                   {step.label}
@@ -128,11 +128,11 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
               </div>
               {!isLast && (
                 <div className="relative mx-1 mb-4 h-0 w-full flex-1 overflow-hidden" style={{ minWidth: 10 }}>
-                  <div className="border-t border-dotted border-white/22" />
+                  <div className="border-t border-dotted border-slate-300" />
                   {isNextAfterCurrent && (
                     <motion.div
                       key={linePulseKey}
-                      className="pointer-events-none absolute inset-x-0 top-[-1px] border-t border-dotted border-white/85"
+                      className="pointer-events-none absolute inset-x-0 top-[-1px] border-t border-dotted border-violet-400/90"
                       initial={{ opacity: 0, x: "-30%" }}
                       animate={{ opacity: [0, 0.95, 0], x: ["-30%", "30%", "95%"] }}
                       transition={{ duration: 0.9, ease: "easeInOut" }}
@@ -144,23 +144,23 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
           );
         })}
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/16 px-2 py-1 backdrop-blur-sm">
-          <Star className="fill-white/90 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" size={14} strokeWidth={1.8} />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/76">Bia XP</span>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-100/95 px-2.5 py-1 shadow-sm">
+          <Star className="fill-amber-400 text-amber-600" size={14} strokeWidth={1.8} />
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-600">Bia XP</span>
           <motion.span
             key={bond}
             initial={{ opacity: 0.7, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
-            className="text-sm font-bold leading-none tabular-nums text-white"
+            className="text-sm font-bold leading-none tabular-nums text-slate-900"
           >
             {bond}
           </motion.span>
         </div>
       </div>
       <div className="text-center">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/60">Growth</p>
-        <p className="text-[11px] font-semibold leading-tight text-white/88">{progressText}</p>
+        <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">Growth</p>
+        <p className="text-[11px] font-semibold leading-tight text-slate-800">{progressText}</p>
       </div>
     </div>
   );
