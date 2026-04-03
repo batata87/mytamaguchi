@@ -222,11 +222,14 @@ function KitchenParallaxDecor({
 export function SceneBackground({
   currentScene,
   mood,
-  isSick = false
+  isSick = false,
+  roomDecorEmoji
 }: {
   currentScene: SceneState;
   mood: PetMood;
   isSick?: boolean;
+  /** Boutique room decor — preview or equipped. */
+  roomDecorEmoji?: string | null;
 }) {
   const gradientKey = currentScene;
   const parallaxActive = currentScene === "nursery" || currentScene === "feed";
@@ -382,6 +385,16 @@ export function SceneBackground({
       )}
       <SceneParticles scene={currentScene} />
       <MoodParticles mood={mood} />
+      {roomDecorEmoji ? (
+        <motion.div
+          className="pointer-events-none absolute bottom-[11%] left-[6%] z-[2] text-[2.75rem] drop-shadow-[0_6px_18px_rgba(30,27,75,0.25)] sm:bottom-[14%] sm:left-[8%] sm:text-[3.25rem]"
+          animate={{ y: [0, -5, 0], rotate: [-2, 2, -2] }}
+          transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
+          aria-hidden
+        >
+          {roomDecorEmoji}
+        </motion.div>
+      ) : null}
     </div>
   );
 }

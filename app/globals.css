@@ -6,8 +6,14 @@
   color-scheme: light;
 }
 
+/* Full viewport on mobile browsers + iOS (address bar / safe areas). */
+.app-native-shell {
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+}
+
 body {
-  @apply min-h-screen overflow-x-hidden bg-transparent text-slate-800 antialiased;
+  @apply overflow-x-hidden bg-transparent text-slate-800 antialiased;
 }
 
 html,
@@ -18,6 +24,11 @@ body {
 button,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Snappier taps on mobile (avoids double-tap zoom delay on older WebViews). */
+.app-tap-target {
+  touch-action: manipulation;
 }
 
 @keyframes ambientGradient {

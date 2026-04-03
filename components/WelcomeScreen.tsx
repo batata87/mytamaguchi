@@ -15,13 +15,13 @@ export function WelcomeScreen({ onStart, isLeaving, isReady = true }: WelcomeScr
 
   return (
     <motion.div
-      className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.28),_transparent_32%),linear-gradient(180deg,_#050510_0%,_#0d0b23_58%,_#151133_100%)] px-6"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(99,102,241,0.28),_transparent_32%),linear-gradient(180deg,_#050510_0%,_#0d0b23_58%,_#151133_100%)] px-6 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]"
       initial={{ opacity: 1, scale: 1 }}
       animate={isLeaving ? { opacity: 0, scale: 1.15 } : { opacity: 1, scale: 1 }}
       transition={{ duration: 0.8, ease: "easeInOut" }}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle,_rgba(255,255,255,0.12)_1px,_transparent_1px)] [background-size:34px_34px] opacity-20" />
-      <div className="absolute right-5 top-5 z-20">
+      <div className="absolute right-[max(1.25rem,env(safe-area-inset-right))] top-[max(1.25rem,env(safe-area-inset-top))] z-20">
         <InfoButton open={showInfo} onOpen={() => setShowInfo(true)} onClose={() => setShowInfo(false)} />
       </div>
       <div className="relative z-10 mx-auto flex w-full max-w-md flex-col items-center text-center">

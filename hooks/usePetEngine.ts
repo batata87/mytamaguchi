@@ -33,7 +33,8 @@ function normalizePet(partial: PetState): PetState {
     xp: partial.xp ?? 0,
     status: partial.status ?? "happy",
     stage: partial.stage ?? "egg",
-    eggType: partial.eggType ?? "pink"
+    eggType: partial.eggType ?? "pink",
+    hasChosenStarterName: partial.hasChosenStarterName !== false
   };
   return withSyncedStatus(base);
 }
@@ -287,7 +288,9 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
   const createPet = useCallback(async (eggType: EggType) => {
     const next = withSyncedStatus({
       ...initialPetState,
-      eggType
+      eggType,
+      hasChosenStarterName: false,
+      name: "Bia"
     });
 
     setPet(next);
@@ -295,6 +298,29 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     setIsReady(true);
     saveStored(next, Date.now());
     await saveGameState(next);
+  }, []);
+
+  const completeStarterNaming = useCallback(async (name: string) => {
+    const trimmed = name.trim().slice(0, 24);
+    if (!trimmed) {
+      return;
+    }
+
+    let updated: PetState | null = null;
+    setPet((prev) => {
+      const next = withSyncedStatus({
+        ...prev,
+        name: trimmed,
+        hasChosenStarterName: true
+      });
+      updated = next;
+      saveStored(next, Date.now());
+      return next;
+    });
+
+    if (updated) {
+      await saveGameState(updated);
+    }
   }, []);
 
   const renamePet = useCallback(async (name: string) => {
@@ -354,6 +380,7 @@ export function usePetEngine(options: UsePetEngineOptions = {}) {
     applyStatDelta,
     setStage,
     createPet,
+    completeStarterNaming,
     healPet,
     renamePet
   };

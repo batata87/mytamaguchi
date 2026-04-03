@@ -4,6 +4,9 @@ const config: Config = {
   content: ["./app/**/*.{js,ts,jsx,tsx,mdx}", "./components/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        merchant: ["var(--font-merchant)", "Georgia", "ui-serif", "serif"]
+      },
       colors: {
         nebula: {
           blush: "#FFE5EC",

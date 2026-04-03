@@ -9,6 +9,10 @@ export type PlayerMeta = {
   stardust: number;
   memoryKeys: string[];
   lastDailyGiftYmd: string | null;
+  ownedItemIds: string[];
+  equippedHatId: string | null;
+  equippedSkinId: string | null;
+  equippedRoomId: string | null;
 };
 
 const defaultMeta: PlayerMeta = {
@@ -17,7 +21,11 @@ const defaultMeta: PlayerMeta = {
   carePlayCount: 0,
   stardust: 0,
   memoryKeys: [],
-  lastDailyGiftYmd: null
+  lastDailyGiftYmd: null,
+  ownedItemIds: [],
+  equippedHatId: null,
+  equippedSkinId: null,
+  equippedRoomId: null
 };
 
 export function loadPlayerMeta(): PlayerMeta {
@@ -33,7 +41,11 @@ export function loadPlayerMeta(): PlayerMeta {
     return {
       ...defaultMeta,
       ...parsed,
-      memoryKeys: Array.isArray(parsed.memoryKeys) ? parsed.memoryKeys : []
+      memoryKeys: Array.isArray(parsed.memoryKeys) ? parsed.memoryKeys : [],
+      ownedItemIds: Array.isArray(parsed.ownedItemIds) ? parsed.ownedItemIds : [],
+      equippedHatId: typeof parsed.equippedHatId === "string" ? parsed.equippedHatId : null,
+      equippedSkinId: typeof parsed.equippedSkinId === "string" ? parsed.equippedSkinId : null,
+      equippedRoomId: typeof parsed.equippedRoomId === "string" ? parsed.equippedRoomId : null
     };
   } catch {
     return { ...defaultMeta };

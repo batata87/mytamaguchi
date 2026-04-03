@@ -43,7 +43,8 @@ function rowToPet(row: DbPetRow): PetState {
     xp: row.bond,
     stage: row.stage,
     eggType: row.egg_type,
-    status: "happy"
+    status: "happy",
+    hasChosenStarterName: true
   };
 
   return { ...pet, status: deriveMood(pet) };

@@ -7,6 +7,7 @@ import {
   BrushCleaning,
   Cherry,
   CloudMoon,
+  Lock,
   Sparkle,
   Sparkles,
   Stars,
@@ -15,6 +16,7 @@ import {
   Orbit,
   SprayCan,
   FlaskRound,
+  ShoppingBag,
   X
 } from "lucide-react";
 import type { PetStage } from "@/lib/game";
@@ -37,6 +39,7 @@ type SidebarProps = {
   onSubDrop: (action: CareAction, subId: string, point: { x: number; y: number }) => void;
   onToggleAction: (action: CareAction) => void;
   onCloseMenu: () => void;
+  onOpenShop?: () => void;
 };
 
 const careActions: Array<{ action: CareAction; label: string; icon: ReactNode }> = [
@@ -120,7 +123,7 @@ function DraggablePetTool({
         onPetDragChange?.(false);
         onDropPet(info.point);
       }}
-      className={`${base} touch-none`}
+      className={`${base} touch-none app-tap-target`}
       aria-label={label}
     >
       {icon}
@@ -157,7 +160,8 @@ function ActivityWithSubmenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const subs = isSick && action === "clean" ? [...ACTIVITY_SUBMENUS[action], STAR_ELIXIR_ITEM] : ACTIVITY_SUBMENUS[action];
   const locked = lockedActions.includes(action);
-  const open = activeAction === action;
+  const open = activeAction === action && !muted;
+  const isDisabled = locked || muted;
 
   useEffect(() => {
     if (!open) {
@@ -174,22 +178,47 @@ function ActivityWithSubmenu({
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open, onCloseMenu]);
 
+  const titleHint = muted
+    ? "Unlocks after Bia hatches"
+    : locked
+      ? "Not available right now"
+      : undefined;
+
   return (
     <div className="relative" ref={rootRef}>
       <button
         type="button"
-        disabled={locked}
-        onClick={() => onToggleAction(action)}
-        className={`flex h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center gap-1 rounded-2xl border shadow-sm backdrop-blur-sm transition ${
-          muted || locked
-            ? "border-white/15 bg-white/10 text-slate-500 opacity-70"
-            : open
-              ? "border-white/70 bg-white/22 text-white ring-2 ring-white/45"
-              : "border-white/35 bg-white/12 text-white/92 hover:bg-white/20 hover:text-white"
+        disabled={isDisabled}
+        title={titleHint}
+        aria-label={
+          muted ? `${label}, unlocks after hatch` : locked ? `${label}, unavailable` : label
+        }
+        onClick={() => {
+          if (isDisabled) {
+            return;
+          }
+          onToggleAction(action);
+        }}
+        className={`app-tap-target relative flex h-14 w-14 flex-col items-center justify-center gap-1 rounded-2xl border shadow-sm backdrop-blur-sm transition sm:h-16 sm:w-16 ${
+          muted
+            ? "cursor-not-allowed border-slate-500/40 bg-slate-600/25 text-slate-500 opacity-55 grayscale saturate-[0.35] shadow-none ring-1 ring-slate-500/25"
+            : locked
+              ? "cursor-not-allowed border-white/15 bg-white/10 text-slate-500 opacity-70"
+              : open
+                ? "border-white/70 bg-white/22 text-white ring-2 ring-white/45"
+                : "enabled:active:scale-[0.97] border-white/35 bg-white/12 text-white/92 hover:bg-white/20 hover:text-white"
         }`}
       >
-        <span>{icon}</span>
-        <span className="text-[10px] font-semibold">{label}</span>
+        {muted ? (
+          <span
+            className="pointer-events-none absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-800/25 text-slate-600"
+            aria-hidden
+          >
+            <Lock className="h-2.5 w-2.5" strokeWidth={2.5} />
+          </span>
+        ) : null}
+        <span className={muted ? "opacity-80" : ""}>{icon}</span>
+        <span className={`text-[10px] font-semibold ${muted ? "text-slate-600" : ""}`}>{label}</span>
       </button>
 
       <AnimatePresence>
@@ -243,6 +272,7 @@ export function Sidebar({
   onSubDrop,
   onToggleAction,
   onCloseMenu,
+  onOpenShop,
   disabled = false
 }: SidebarProps) {
   const isEgg = stage === "egg";
@@ -263,10 +293,32 @@ export function Sidebar({
         </>
       )}
 
-      <div className="flex flex-row items-end justify-center gap-2 overflow-x-visible overflow-y-visible rounded-2xl border border-white/20 bg-white/10 p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible">
-        <p className="px-0.5 text-center text-[9px] font-bold uppercase tracking-wide text-slate-700">
-          {isEgg ? "After hatch" : "Activities"}
+      <div
+        className={`flex flex-row items-end justify-center gap-2 overflow-x-visible overflow-y-visible rounded-2xl border p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible ${
+          isEgg
+            ? "border-dashed border-slate-400/50 bg-slate-900/[0.07] shadow-none ring-1 ring-slate-500/15"
+            : "border-white/20 bg-white/10"
+        }`}
+      >
+        <p
+          className={`px-0.5 text-center text-[9px] font-bold uppercase tracking-wide ${
+            isEgg ? "text-slate-500" : "text-slate-700"
+          }`}
+        >
+          {isEgg ? "After hatch (locked)" : "Activities"}
         </p>
+        {typeof onOpenShop === "function" ? (
+          <button
+            type="button"
+            onClick={onOpenShop}
+            className="app-tap-target flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-violet-400/35 bg-gradient-to-b from-violet-200/35 to-indigo-200/25 text-violet-950 shadow-sm backdrop-blur-sm transition enabled:active:scale-[0.97] sm:h-16 sm:w-16"
+            aria-label="Open Star-Merchant boutique"
+            title="Cosmic Boutique"
+          >
+            <ShoppingBag className="h-5 w-5 opacity-90" strokeWidth={2} />
+            <span className="text-[8px] font-bold uppercase leading-none text-violet-950/90">Shop</span>
+          </button>
+        ) : null}
         {careActions.map((item) => (
           <ActivityWithSubmenu
             key={item.action}

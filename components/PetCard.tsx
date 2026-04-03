@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, MapPin } from "lucide-react";
 import { ChooseEggScreen } from "@/components/ChooseEggScreen";
+import { NameCreatureScreen } from "@/components/NameCreatureScreen";
 import { CreatureStage } from "@/components/CreatureStage";
 import { GrowthJourney } from "@/components/GrowthJourney";
 import { MoodAura } from "@/components/MoodAura";
 import { Sidebar } from "@/components/Sidebar";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { MemoryBook } from "@/components/MemoryBook";
+import { Boutique } from "@/components/Boutique";
+import { StardustCounter } from "@/components/StardustCounter";
 import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
@@ -26,7 +29,10 @@ import { playPetPurrHaptic } from "@/lib/haptics";
 import { XP_HATCH_TARGET } from "@/lib/stageProgress";
 import { useHungerNotification } from "@/hooks/useHungerNotification";
 import { useInterval } from "@/hooks/useInterval";
+import { useStore } from "@/hooks/useStore";
 import { usePetEngine, WELCOME_BACK_MIN_ABSENCE_MS } from "@/hooks/usePetEngine";
+import { findStoreItem, HUE_PRESET_CSS, localCalendarYmd } from "@/lib/storeCatalog";
+import type { StoreItem } from "@/lib/storeTypes";
 
 type StatKey = "hunger" | "energy" | "joy" | "hygiene";
 type FeedbackType = "feed" | "sleep" | "play" | "clean" | "pet";
@@ -51,6 +57,14 @@ type Particle = {
 
 type BiaPulse = {
   id: number;
+};
+
+type StardustFlight = {
+  id: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 };
 
 const biaPulse = {
@@ -100,6 +114,7 @@ export function PetCard() {
     applyStatDelta,
     setStage,
     createPet,
+    completeStarterNaming,
     healPet,
     renamePet
   } = usePetEngine({
@@ -114,13 +129,6 @@ export function PetCard() {
       setNotifPerm(Notification.permission);
     }
   }, []);
-
-  useHungerNotification({
-    pet,
-    isReady,
-    needsEggChoice,
-    notificationPermission: notifPerm
-  });
 
   const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
   const [currentScene, setCurrentScene] = useState<SceneState>("nursery");
@@ -138,7 +146,17 @@ export function PetCard() {
   const [isStarting, setIsStarting] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [viewport, setViewport] = useState({ width: 390, height: 844 });
-  const shouldHideMain = !isReady || !hasStarted || (hasStarted && needsEggChoice);
+  const awaitingStarterName = isReady && hasStarted && !needsEggChoice && pet.hasChosenStarterName === false;
+  const shouldHideMain =
+    !isReady || !hasStarted || (hasStarted && needsEggChoice) || awaitingStarterName;
+
+  useHungerNotification({
+    pet,
+    isReady,
+    needsEggChoice: needsEggChoice || awaitingStarterName,
+    notificationPermission: notifPerm
+  });
+
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [eggCycle, setEggCycle] = useState<EggCycleMeta | null>(null);
   const [healCycle, setHealCycle] = useState<HealCycleMeta | null>(null);
@@ -163,7 +181,20 @@ export function PetCard() {
   } | null>(null);
   const [happyDanceNonce, setHappyDanceNonce] = useState(0);
   const [memoryBookOpen, setMemoryBookOpen] = useState(false);
-  const [dailyToast, setDailyToast] = useState<string | null>(null);
+  const stardustCounterRef = useRef<HTMLDivElement>(null);
+  const [boutiqueOpen, setBoutiqueOpen] = useState(false);
+  const [previewItem, setPreviewItem] = useState<StoreItem | null>(null);
+  const [stardustPulseNonce, setStardustPulseNonce] = useState(0);
+  const [stardustFlights, setStardustFlights] = useState<StardustFlight[]>([]);
+  const [starDroplet, setStarDroplet] = useState<{ x: number; y: number } | null>(null);
+  const boutiqueYmd = localCalendarYmd(new Date(nowTick));
+  const { dailyItems, cosmicEgg, buyWithStardust, equipItem, openCosmicEgg } = useStore(
+    playerMeta,
+    setPlayerMeta,
+    boutiqueYmd
+  );
+  type DailyToastPayload = { title: string; detail?: string };
+  const [dailyToast, setDailyToast] = useState<DailyToastPayload | null>(null);
   const [reunionPlayKey, setReunionPlayKey] = useState(0);
   const [feedSquashNonce, setFeedSquashNonce] = useState(0);
   const [statsPanelOpen, setStatsPanelOpen] = useState(true);
@@ -180,7 +211,7 @@ export function PetCard() {
    * Single effect avoids Strict Mode double-handshake between two effects.
    */
   useEffect(() => {
-    if (!hasStarted || !isReady || needsEggChoice) {
+    if (!hasStarted || !isReady || needsEggChoice || awaitingStarterName) {
       return;
     }
 
@@ -201,7 +232,7 @@ export function PetCard() {
 
     if (meta.lastDailyGiftYmd === today) {
       if (reunited) {
-        setDailyToast("Welcome back! Bia missed you ✨");
+        setDailyToast({ title: `Welcome back! ${pet.name} missed you ✨` });
         const t = window.setTimeout(() => setDailyToast(null), 8000);
         return () => window.clearTimeout(t);
       }
@@ -211,15 +242,24 @@ export function PetCard() {
     const next = { ...meta, lastDailyGiftYmd: today, stardust: meta.stardust + 8 };
     savePlayerMeta(next);
     setPlayerMeta(next);
+    setStardustPulseNonce((n) => n + 1);
     applyStatDelta({ joy: 6 }, 5);
+    const stardustDetail =
+      `Stardust is your check-in spark — it adds up in the Memory Book (heart icon). Collect it to celebrate coming back to ${pet.name}.`;
     setDailyToast(
       reunited
-        ? "Welcome back! Daily login: +8 stardust — thanks for coming home ✨"
-        : "Daily login: +8 stardust ✨"
+        ? {
+            title: "Welcome back! +8 stardust added.",
+            detail: stardustDetail
+          }
+        : {
+            title: "Daily login: +8 stardust",
+            detail: stardustDetail
+          }
     );
     const t = window.setTimeout(() => setDailyToast(null), 8000);
     return () => window.clearTimeout(t);
-  }, [hasStarted, isReady, needsEggChoice, welcomeBackAbsentMs, clearWelcomeBack, applyStatDelta]);
+  }, [hasStarted, isReady, needsEggChoice, awaitingStarterName, welcomeBackAbsentMs, clearWelcomeBack, applyStatDelta, pet.name]);
 
   useEffect(() => {
     if (!hasStarted || !isReady || pet.stage === "egg" || needsEggChoice) {
@@ -827,6 +867,12 @@ export function PetCard() {
     }
   }, [pet.stage, hatchPhase]);
 
+  useEffect(() => {
+    if (pet.stage === "egg") {
+      setActiveAction(null);
+    }
+  }, [pet.stage]);
+
   const careStylePill = careStyleLabel(deriveCareStyle(playerMeta));
   const avgVitality = (pet.hunger + pet.energy + pet.joy + pet.hygiene) / 4;
   const cravingForStage =
@@ -835,26 +881,121 @@ export function PetCard() {
       : null;
   const pleadForFood = pet.hunger <= 20 && pet.stage !== "egg" && !isSick;
 
+  const grantStardust = useCallback((amount: number, from?: { x: number; y: number }) => {
+    setPlayerMeta((m) => {
+      const next = { ...m, stardust: m.stardust + amount };
+      savePlayerMeta(next);
+      return next;
+    });
+    setStardustPulseNonce((n) => n + 1);
+    if (from && typeof window !== "undefined") {
+      const el = stardustCounterRef.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const id = Date.now() + Math.floor(Math.random() * 1000);
+        setStardustFlights((f) => [...f, { id, x0: from.x, y0: from.y, x1: r.left + r.width / 2, y1: r.top + r.height / 2 }]);
+        window.setTimeout(() => {
+          setStardustFlights((f) => f.filter((p) => p.id !== id));
+        }, 950);
+      }
+    }
+  }, []);
+
+  const resolveCosmetics = useMemo(() => {
+    const hatEq = playerMeta.equippedHatId ? findStoreItem(playerMeta.equippedHatId) : undefined;
+    const skinEq = playerMeta.equippedSkinId ? findStoreItem(playerMeta.equippedSkinId) : undefined;
+    const roomEq = playerMeta.equippedRoomId ? findStoreItem(playerMeta.equippedRoomId) : undefined;
+    let hatEmoji: string | null = hatEq?.category === "hat" ? hatEq.displayEmoji : null;
+    let skinExtra: string | null =
+      skinEq?.category === "skin" && skinEq.huePreset ? (HUE_PRESET_CSS[skinEq.huePreset] ?? null) : null;
+    let roomEmoji: string | null = roomEq?.category === "room" ? roomEq.displayEmoji : null;
+    if (previewItem) {
+      if (previewItem.category === "hat") {
+        hatEmoji = previewItem.displayEmoji;
+      }
+      if (previewItem.category === "skin") {
+        skinExtra = previewItem.huePreset ? (HUE_PRESET_CSS[previewItem.huePreset] ?? null) : null;
+      }
+      if (previewItem.category === "room") {
+        roomEmoji = previewItem.displayEmoji;
+      }
+    }
+    return { hatEmoji, skinExtra, roomEmoji };
+  }, [playerMeta.equippedHatId, playerMeta.equippedSkinId, playerMeta.equippedRoomId, previewItem]);
+
+  const handleHoldStardust = useCallback(() => {
+    if (inputsLocked) {
+      return;
+    }
+    const rect = creatureRef.current?.getBoundingClientRect();
+    if (rect) {
+      grantStardust(1, {
+        x: rect.left + rect.width * 0.5,
+        y: rect.top + rect.height * 0.38
+      });
+    } else {
+      grantStardust(1);
+    }
+  }, [inputsLocked, grantStardust]);
+
+  useEffect(() => {
+    if (shouldHideMain || pet.stage === "egg") {
+      setStarDroplet(null);
+      return;
+    }
+    let cancelled = false;
+    let tid: number | undefined;
+    const arm = () => {
+      const ms = 42000 + Math.random() * 48000;
+      tid = window.setTimeout(() => {
+        if (cancelled) {
+          return;
+        }
+        const rect = creatureRef.current?.getBoundingClientRect();
+        if (rect) {
+          setStarDroplet({
+            x: rect.left + rect.width * (0.28 + Math.random() * 0.48),
+            y: rect.top + rect.height * (0.12 + Math.random() * 0.55)
+          });
+        }
+        arm();
+      }, ms);
+    };
+    arm();
+    return () => {
+      cancelled = true;
+      if (tid !== undefined) {
+        window.clearTimeout(tid);
+      }
+    };
+  }, [shouldHideMain, pet.stage]);
+
   return (
     <motion.section
-      className={`relative min-h-screen text-slate-800 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
+      className={`relative min-h-[100dvh] pb-[env(safe-area-inset-bottom)] text-slate-800 selection:bg-violet-200/50 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
       initial={false}
       animate={!hasStarted && !isStarting ? { scale: 0.98, opacity: 0.75 } : { scale: 1, opacity: 1 }}
       transition={{ duration: 0.7, ease: "easeInOut" }}
     >
-      <SceneBackground currentScene={currentScene} mood={currentMood} isSick={isSick} />
+      <SceneBackground
+        currentScene={currentScene}
+        mood={currentMood}
+        isSick={isSick}
+        roomDecorEmoji={!shouldHideMain ? resolveCosmetics.roomEmoji : null}
+      />
 
       {!shouldHideMain && (
-        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-2 sm:px-3 sm:pt-3">
+        <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/40 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md sm:px-3 sm:py-3.5">
           <div className="mb-1 grid grid-cols-[2rem_1fr_2rem] items-center gap-1">
             <button
               type="button"
               onClick={() => setMemoryBookOpen(true)}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35"
+              className="app-tap-target relative flex h-9 w-9 flex-col items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35 enabled:active:scale-[0.96]"
+              title="Memory Book — stickers & stardust from your visits"
               aria-label="Open memory book"
             >
-              <BookHeart className="h-4 w-4" strokeWidth={2} />
+              <BookHeart className="h-4 w-4 shrink-0" strokeWidth={2} />
             </button>
             <div className="flex justify-center">
               {isRenaming ? (
@@ -922,7 +1063,7 @@ export function PetCard() {
           <button
             type="button"
             onClick={() => setStatsPanelOpen((o) => !o)}
-            className="mb-1 mt-0.5 flex w-full items-center justify-center gap-1 rounded-full py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-600/90 transition hover:bg-white/30"
+            className="app-tap-target mb-1 mt-0.5 flex w-full items-center justify-center gap-1 rounded-full py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-600/90 transition hover:bg-white/30 enabled:active:scale-[0.99]"
             aria-expanded={statsPanelOpen}
             aria-label={statsPanelOpen ? "Hide stats and mood" : "Show stats and mood"}
           >
@@ -970,7 +1111,7 @@ export function PetCard() {
             </>
           ) : (
             <p className="text-center text-[10px] font-semibold text-slate-600/90">
-              Bia XP <span className="tabular-nums text-slate-800">{pet.xp}</span>
+              {pet.name} XP <span className="tabular-nums text-slate-800">{pet.xp}</span>
               <span className="mx-1.5 text-slate-400">·</span>
               <span className="text-slate-500">Watch the glow — it softens when they need care</span>
             </p>
@@ -1013,10 +1154,26 @@ export function PetCard() {
                 isSick={isSick}
                 healPulseKey={healPulseKey}
                 activityReaction={activityReaction}
+                cosmeticSkinExtraFilter={resolveCosmetics.skinExtra}
+                cosmeticHatEmoji={resolveCosmetics.hatEmoji}
+                onHoldStardustReward={handleHoldStardust}
               />
             </div>
           </motion.div>
         </AnimatePresence>
+      )}
+
+      {!shouldHideMain && (
+        <div className="pointer-events-none fixed right-2.5 top-[calc(env(safe-area-inset-top)+0.45rem)] z-[35] sm:right-4">
+          <div className="pointer-events-auto">
+            <StardustCounter
+              ref={stardustCounterRef}
+              amount={playerMeta.stardust}
+              onOpenShop={() => setBoutiqueOpen(true)}
+              pulseNonce={stardustPulseNonce}
+            />
+          </div>
+        </div>
       )}
 
       {!shouldHideMain && (
@@ -1031,6 +1188,7 @@ export function PetCard() {
           onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
           onCloseMenu={() => setActiveAction(null)}
           onPetDragChange={setDraggingPetTool}
+          onOpenShop={() => setBoutiqueOpen(true)}
           disabled={inputsLocked}
         />
       )}
@@ -1102,16 +1260,57 @@ export function PetCard() {
       </AnimatePresence>
 
       <AnimatePresence>
+        {stardustFlights.map((f) => (
+          <motion.div
+            key={f.id}
+            className="pointer-events-none fixed z-[60] text-lg font-bold text-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]"
+            initial={{ opacity: 1, scale: 1, left: f.x0, top: f.y0 }}
+            animate={{ opacity: 0.12, scale: 0.4, left: f.x1, top: f.y1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.85, ease: "easeOut" }}
+            style={{ position: "fixed", transform: "translate(-50%, -50%)" }}
+          >
+            ✦
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {starDroplet && !shouldHideMain ? (
+          <motion.button
+            key="star-droplet"
+            type="button"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 320, damping: 22 }}
+            className="app-tap-target fixed z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-amber-200/60 bg-gradient-to-b from-amber-100/95 to-violet-100/90 text-lg shadow-[0_0_22px_rgba(251,191,36,0.55)]"
+            style={{ left: starDroplet.x, top: starDroplet.y, transform: "translate(-50%, -50%)" }}
+            aria-label="Collect star droplet"
+            onClick={() => {
+              grantStardust(2, starDroplet);
+              setStarDroplet(null);
+            }}
+          >
+            ✦
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {dailyToast && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-[55] mx-auto max-w-[min(100%,480px)] px-4 text-center"
+            className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+11rem)] z-[50] mx-auto max-w-[min(100%,420px)] px-4 text-center sm:bottom-[calc(env(safe-area-inset-bottom)+11.5rem)]"
           >
-            <div className="rounded-2xl border border-white/40 bg-white/85 px-3 py-2 text-[11px] font-semibold leading-snug text-slate-800 shadow-lg backdrop-blur-sm">
-              {dailyToast}
+            <div className="rounded-2xl border border-white/45 bg-white/92 px-3 py-2.5 text-left shadow-lg backdrop-blur-md">
+              <p className="text-[11px] font-semibold leading-snug text-slate-900">{dailyToast.title}</p>
+              {dailyToast.detail ? (
+                <p className="mt-1.5 text-[10px] font-medium leading-snug text-slate-600">{dailyToast.detail}</p>
+              ) : null}
             </div>
           </motion.div>
         )}
@@ -1125,6 +1324,30 @@ export function PetCard() {
         careStyleNote={careStylePill}
       />
 
+      <Boutique
+        open={boutiqueOpen}
+        onClose={() => {
+          setBoutiqueOpen(false);
+          setPreviewItem(null);
+        }}
+        merchantFontClass="font-merchant"
+        dailyItems={dailyItems}
+        cosmicEgg={cosmicEgg}
+        ownedIds={playerMeta.ownedItemIds}
+        stardust={playerMeta.stardust}
+        previewItemId={previewItem?.id ?? null}
+        onPreview={(item) => setPreviewItem(item)}
+        onBuyStardust={(item) => {
+          const r = buyWithStardust(item);
+          if (r.ok) {
+            setStardustPulseNonce((n) => n + 1);
+          }
+          return r;
+        }}
+        onEquip={equipItem}
+        onOpenCosmicEgg={openCosmicEgg}
+      />
+
       <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.2rem)] sm:px-3 sm:pb-3">
         <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
@@ -1136,8 +1359,8 @@ export function PetCard() {
                 ? healIsReady
                   ? "Healing complete. Drop Star Elixir to stabilize now."
                   : `Healing in progress: ${Math.round(healProgressPct)}% • ~${healRemainingLabel} left`
-                : "Bia is sick. Use Star Elixir to begin treatment."
-              : "Drag activities onto your companion. More options unlock as Bia grows."}
+                : `${pet.name} is sick. Use Star Elixir to begin treatment.`
+              : `Drag activities onto your companion. More options unlock as ${pet.name} grows.`}
           <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
             <MapPin size={12} className="shrink-0 opacity-80" aria-hidden />
             <span>
@@ -1152,6 +1375,12 @@ export function PetCard() {
 
       <AnimatePresence>
         {hasStarted && isReady && needsEggChoice && <ChooseEggScreen onChoose={chooseEgg} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {awaitingStarterName ? (
+          <NameCreatureScreen key="starter-name" onConfirm={(name) => void completeStarterNaming(name)} />
+        ) : null}
       </AnimatePresence>
     </motion.section>
   );

@@ -13,6 +13,11 @@ export type PetState = {
   status: PetMood;
   stage: PetStage;
   eggType: EggType;
+  /**
+   * After first egg choice, false until the player confirms a starter name.
+   * Omitted in older saves — treated as true when hydrating.
+   */
+  hasChosenStarterName?: boolean;
 };
 
 export const initialPetState: PetState = {
@@ -24,7 +29,8 @@ export const initialPetState: PetState = {
   xp: 0,
   status: "happy",
   stage: "egg",
-  eggType: "pink"
+  eggType: "pink",
+  hasChosenStarterName: true
 };
 
 export const PET_STORAGE_KEY = "bia-pet-engine-v1";

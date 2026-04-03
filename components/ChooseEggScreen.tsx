@@ -48,7 +48,7 @@ function EggShell({ shellClass, glowClass }: { shellClass: string; glowClass: st
 
 export function ChooseEggScreen({ onChoose }: ChooseEggScreenProps) {
   return (
-    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-md">
+    <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/55 px-4 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)] backdrop-blur-md">
       <div className="w-full max-w-lg rounded-[2rem] border border-white/20 bg-[linear-gradient(180deg,rgba(16,24,52,0.94),rgba(41,20,79,0.94))] p-6 text-white shadow-[0_20px_60px_rgba(10,10,30,0.45)]">
         <h2 className="text-center text-2xl font-bold tracking-tight">Choose your Egg</h2>
         <p className="mt-2 text-center text-sm text-white/75">Your first bond begins with a shell color. Pick the one you want to raise.</p>

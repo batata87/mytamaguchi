@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
@@ -43,6 +43,12 @@ type CreatureStageProps = {
   isSick: boolean;
   healPulseKey: number;
   activityReaction: ActivityReaction;
+  /** Extra CSS filter for equipped / preview boutique skin (hue-shift variants). */
+  cosmeticSkinExtraFilter?: string | null;
+  /** Equipped or preview hat emoji */
+  cosmeticHatEmoji?: string | null;
+  /** Every 5s continuous hold while not egg: callback (stardust grant in parent). */
+  onHoldStardustReward?: () => void;
 };
 
 function eggTypeToTintFilter(eggType: EggType): string {
@@ -324,7 +330,10 @@ export function CreatureStage({
   useDefaultBabyAsset,
   isSick,
   healPulseKey,
-  activityReaction
+  activityReaction,
+  cosmeticSkinExtraFilter,
+  cosmeticHatEmoji,
+  onHoldStardustReward
 }: CreatureStageProps) {
   const breatheVariants = breatheVariantsForMood(mood);
   const breatheDuration = isSick ? 4.8 : mood === "blissful" ? 1.4 : 2.4;
@@ -340,7 +349,55 @@ export function CreatureStage({
     if (tintFilter) creatureFilterParts.push(tintFilter);
   }
 
+  if (cosmeticSkinExtraFilter && !isSick) {
+    creatureFilterParts.push(cosmeticSkinExtraFilter);
+  }
+
   const creatureFilter = creatureFilterParts.length ? creatureFilterParts.join(" ") : undefined;
+  const holdTimerRef = useRef<number | null>(null);
+  const holdRepeatRef = useRef<number | null>(null);
+  const pointerDownAtRef = useRef(0);
+  const holdRewardedRef = useRef(false);
+
+  const clearHoldTimers = () => {
+    if (holdTimerRef.current != null) {
+      window.clearTimeout(holdTimerRef.current);
+    }
+    if (holdRepeatRef.current != null) {
+      window.clearInterval(holdRepeatRef.current);
+    }
+    holdTimerRef.current = null;
+    holdRepeatRef.current = null;
+  };
+
+  useEffect(() => () => clearHoldTimers(), []);
+
+  const enableHoldStardust = Boolean(onHoldStardustReward && stage !== "egg");
+
+  const handleHoldPointerDown = () => {
+    if (!enableHoldStardust) {
+      return;
+    }
+    holdRewardedRef.current = false;
+    pointerDownAtRef.current = Date.now();
+    holdTimerRef.current = window.setTimeout(() => {
+      holdRewardedRef.current = true;
+      onHoldStardustReward?.();
+      holdRepeatRef.current = window.setInterval(() => onHoldStardustReward?.(), 5000);
+    }, 5000);
+  };
+
+  const handleHoldPointerEnd = () => {
+    if (!enableHoldStardust) {
+      return;
+    }
+    clearHoldTimers();
+    const elapsed = Date.now() - pointerDownAtRef.current;
+    if (elapsed < 280 && !holdRewardedRef.current) {
+      onPet();
+    }
+  };
+
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
     if (!craving) {
@@ -377,11 +434,13 @@ export function CreatureStage({
         </div>
       )}
       <motion.button
-        onClick={onPet}
+        type="button"
+        onClick={enableHoldStardust ? undefined : onPet}
+        onPointerDown={enableHoldStardust ? handleHoldPointerDown : undefined}
+        onPointerUp={enableHoldStardust ? handleHoldPointerEnd : undefined}
+        onPointerLeave={enableHoldStardust ? handleHoldPointerEnd : undefined}
+        onPointerCancel={enableHoldStardust ? handleHoldPointerEnd : undefined}
         className="relative -mt-2 flex items-center justify-center"
-        style={{
-          filter: creatureFilter
-        }}
         animate={pleadForFood ? { rotate: -5 } : { rotate: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
@@ -390,9 +449,10 @@ export function CreatureStage({
           initial={reunionPlayKey > 0 ? { scale: 0.68, y: 100, opacity: 0.72 } : false}
           animate={{ scale: 1, y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 340, damping: 19, mass: 0.62 }}
-          className="flex items-center justify-center"
+          className="relative flex flex-col items-center justify-center"
           style={{ transformOrigin: "50% 60%" }}
         >
+        <div className="relative flex flex-col items-center justify-center" style={{ filter: creatureFilter }}>
         <motion.div
           initial={false}
           animate={healPulseKey ? { scale: [1, 1.12, 0.98, 1], y: [0, -4, 0] } : petJumpKey ? { y: [0, -20, 0] } : { y: 0 }}
@@ -487,6 +547,16 @@ export function CreatureStage({
             </motion.div>
           )}
         </motion.div>
+        </div>
+        {cosmeticHatEmoji ? (
+          <div
+            className="pointer-events-none absolute left-1/2 top-[6%] z-50 -translate-x-1/2 text-[2.6rem] leading-none drop-shadow-[0_4px_14px_rgba(15,23,42,0.35)] sm:text-[2.85rem]"
+            style={{ filter: "none" }}
+            aria-hidden
+          >
+            {cosmeticHatEmoji}
+          </div>
+        ) : null}
         </motion.div>
       </motion.button>
     </div>
