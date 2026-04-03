@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, MapPin } from "lucide-react";
+import { Bell, BellOff, BookHeart, ChevronDown, ChevronUp, MapPin, ShoppingBag } from "lucide-react";
 import { ChooseEggScreen } from "@/components/ChooseEggScreen";
 import { NameCreatureScreen } from "@/components/NameCreatureScreen";
 import { CreatureStage } from "@/components/CreatureStage";
@@ -970,6 +970,11 @@ export function PetCard() {
     };
   }, [shouldHideMain, pet.stage]);
 
+  const stardustCollectionHint =
+    pet.stage === "egg"
+      ? "After hatch: stardust comes from daily visits, holding your pet, and tapping ✦ sparkles. Open the boutique with + or the bag icon."
+      : "Earn stardust: first visit each day • press & hold your pet (about +1 every 5 seconds) • tap glowing ✦ near them. Open the shop with + or the bag.";
+
   return (
     <motion.section
       className={`relative min-h-[100dvh] pb-[env(safe-area-inset-bottom)] text-slate-800 selection:bg-violet-200/50 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
@@ -987,17 +992,28 @@ export function PetCard() {
       {!shouldHideMain && (
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/40 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md sm:px-3 sm:py-3.5">
-          <div className="mb-1 grid grid-cols-[2rem_1fr_2rem] items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setMemoryBookOpen(true)}
-              className="app-tap-target relative flex h-9 w-9 flex-col items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35 enabled:active:scale-[0.96]"
-              title="Memory Book — stickers & stardust from your visits"
-              aria-label="Open memory book"
-            >
-              <BookHeart className="h-4 w-4 shrink-0" strokeWidth={2} />
-            </button>
-            <div className="flex justify-center">
+          <div className="mb-1 grid grid-cols-[auto_1fr_auto] items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setMemoryBookOpen(true)}
+                className="app-tap-target flex h-8 w-8 items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35 enabled:active:scale-[0.96]"
+                title="Memory Book — stickers & memories"
+                aria-label="Open memory book"
+              >
+                <BookHeart className="h-4 w-4 shrink-0" strokeWidth={2} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setBoutiqueOpen(true)}
+                className="app-tap-target flex h-8 w-8 items-center justify-center rounded-full text-violet-800/95 transition hover:bg-violet-200/35 enabled:active:scale-[0.96]"
+                title="Cosmic Boutique — spend stardust"
+                aria-label="Open boutique"
+              >
+                <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+            <div className="flex min-w-0 justify-center">
               {isRenaming ? (
                 <input
                   ref={renameInputRef}
@@ -1028,14 +1044,21 @@ export function PetCard() {
                 </button>
               )}
             </div>
-            <div className="flex w-8 justify-end">
-              {typeof Notification !== "undefined" && (
+            <div className="flex shrink-0 items-center justify-end gap-1">
+              <StardustCounter
+                ref={stardustCounterRef}
+                amount={playerMeta.stardust}
+                onOpenShop={() => setBoutiqueOpen(true)}
+                pulseNonce={stardustPulseNonce}
+                collectionHint={stardustCollectionHint}
+              />
+              {typeof Notification !== "undefined" ? (
                 <button
                   type="button"
                   onClick={() => {
                     void Notification.requestPermission().then((r) => setNotifPerm(r));
                   }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-slate-700/90 transition hover:bg-white/35 disabled:opacity-40"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-700/90 transition hover:bg-white/35 disabled:opacity-40"
                   title={
                     notifPerm === "granted"
                       ? "Hunger reminders on"
@@ -1056,7 +1079,7 @@ export function PetCard() {
                     <Bell className="h-4 w-4" strokeWidth={2} />
                   )}
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -1164,19 +1187,6 @@ export function PetCard() {
       )}
 
       {!shouldHideMain && (
-        <div className="pointer-events-none fixed right-2.5 top-[calc(env(safe-area-inset-top)+0.45rem)] z-[35] sm:right-4">
-          <div className="pointer-events-auto">
-            <StardustCounter
-              ref={stardustCounterRef}
-              amount={playerMeta.stardust}
-              onOpenShop={() => setBoutiqueOpen(true)}
-              pulseNonce={stardustPulseNonce}
-            />
-          </div>
-        </div>
-      )}
-
-      {!shouldHideMain && (
         <Sidebar
           stage={pet.stage}
           activeAction={activeAction}
@@ -1188,7 +1198,6 @@ export function PetCard() {
           onToggleAction={(action) => setActiveAction((current) => (current === action ? null : action))}
           onCloseMenu={() => setActiveAction(null)}
           onPetDragChange={setDraggingPetTool}
-          onOpenShop={() => setBoutiqueOpen(true)}
           disabled={inputsLocked}
         />
       )}
@@ -1361,6 +1370,11 @@ export function PetCard() {
                   : `Healing in progress: ${Math.round(healProgressPct)}% • ~${healRemainingLabel} left`
                 : `${pet.name} is sick. Use Star Elixir to begin treatment.`
               : `Drag activities onto your companion. More options unlock as ${pet.name} grows.`}
+          {pet.stage !== "egg" && !isSick ? (
+            <p className="mt-1 text-[9px] font-medium leading-snug text-violet-900/85">
+              ✦ Stardust: daily login • press and hold {pet.name} • tap glowing ✦ — details in Memory Book.
+            </p>
+          ) : null}
           <div className="mt-1 flex items-center justify-center gap-1.5 text-[9px] text-slate-700/95">
             <MapPin size={12} className="shrink-0 opacity-80" aria-hidden />
             <span>

@@ -94,7 +94,8 @@ export function Boutique({
                   The Star-Merchant&apos;s Wares
                 </h2>
                 <p className="mt-1 text-[11px] font-medium text-slate-600/95">
-                  New picks each day at midnight (your time). Tap an item to preview on your companion.
+                  New picks each day at midnight (your time). Tap an item to preview on your companion. Earn stardust
+                  from daily visits, holding your pet after hatch, and tapping ✦ sparkles.
                 </p>
               </div>
               <button

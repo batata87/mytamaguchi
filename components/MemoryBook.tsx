@@ -57,9 +57,10 @@ export function MemoryBook({ open, onClose, memoryKeys, stardust, careStyleNote 
               Stickers unlock when you try a new care combo or room.
             </p>
             <p className="mb-2 text-xs text-white/65">
-              <span className="font-semibold text-amber-200">Stardust</span> is your visit souvenir: a little adds up each day you log in. The total here (
-              <span className="font-semibold text-amber-200">{stardust}</span>
-              ) shows how often you’ve come home to Bia — and more uses may come later.
+              <span className="font-semibold text-amber-200">Stardust</span> adds up from your first visit each day, from{" "}
+              <span className="font-medium text-white/85">pressing and holding</span> your companion (after hatch), and from{" "}
+              <span className="font-medium text-white/85">tapping glowing ✦</span> when they appear. Total here:{" "}
+              <span className="font-semibold text-amber-200">{stardust}</span>. Spend it in the boutique (header + or bag).
             </p>
             {careStyleNote ? (
               <p className="mb-3 text-[11px] text-white/55">

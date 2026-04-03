@@ -32,10 +32,12 @@ type StardustCounterProps = {
   amount: number;
   onOpenShop: () => void;
   pulseNonce?: number;
+  /** Long-press / hover hint (native title) for how stardust is earned */
+  collectionHint?: string;
 };
 
 export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(function StardustCounter(
-  { amount, onOpenShop, pulseNonce = 0 },
+  { amount, onOpenShop, pulseNonce = 0, collectionHint },
   ref
 ) {
   const [bump, setBump] = useState(0);
@@ -48,6 +50,7 @@ export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(
   return (
     <div
       ref={ref}
+      title={collectionHint}
       className="flex items-center gap-1 rounded-full border border-white/50 bg-white/45 px-2 py-1 shadow-[0_6px_20px_rgba(139,92,246,0.18)] backdrop-blur-md"
     >
       <FourPointStar className="h-5 w-5 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
@@ -65,7 +68,7 @@ export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(
         onClick={onOpenShop}
         className="app-tap-target flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/25 text-violet-900 transition hover:bg-violet-500/35 enabled:active:scale-95"
         aria-label="Open Star-Merchant boutique"
-        title="Boutique"
+        title="Open boutique"
       >
         <Plus className="h-4 w-4" strokeWidth={2.5} />
       </button>
