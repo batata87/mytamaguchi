@@ -13,6 +13,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { MemoryBook } from "@/components/MemoryBook";
 import { Boutique } from "@/components/Boutique";
 import { StardustCounter } from "@/components/StardustCounter";
+import { StardustGuideModal } from "@/components/StardustGuideModal";
 import { SceneBackground, sceneDisplayName, type SceneState } from "@/components/SceneBackground";
 import { triggerSchoolPrideBurst } from "@/lib/confetti";
 import type { CareAction } from "@/lib/activitySubmenus";
@@ -183,6 +184,7 @@ export function PetCard() {
   const [memoryBookOpen, setMemoryBookOpen] = useState(false);
   const stardustCounterRef = useRef<HTMLDivElement>(null);
   const [boutiqueOpen, setBoutiqueOpen] = useState(false);
+  const [stardustInfoOpen, setStardustInfoOpen] = useState(false);
   const [previewItem, setPreviewItem] = useState<StoreItem | null>(null);
   const [stardustPulseNonce, setStardustPulseNonce] = useState(0);
   const [stardustFlights, setStardustFlights] = useState<StardustFlight[]>([]);
@@ -970,11 +972,6 @@ export function PetCard() {
     };
   }, [shouldHideMain, pet.stage]);
 
-  const stardustCollectionHint =
-    pet.stage === "egg"
-      ? "After hatch: stardust comes from daily visits, holding your pet, and tapping ✦ sparkles. Open the boutique with + or the bag icon."
-      : "Earn stardust: first visit each day • press & hold your pet (about +1 every 5 seconds) • tap glowing ✦ near them. Open the shop with + or the bag.";
-
   return (
     <motion.section
       className={`relative min-h-[100dvh] pb-[env(safe-area-inset-bottom)] text-slate-800 selection:bg-violet-200/50 ${!isReady || !hasStarted ? "opacity-0" : ""}`}
@@ -1049,8 +1046,8 @@ export function PetCard() {
                 ref={stardustCounterRef}
                 amount={playerMeta.stardust}
                 onOpenShop={() => setBoutiqueOpen(true)}
+                onOpenInfo={() => setStardustInfoOpen(true)}
                 pulseNonce={stardustPulseNonce}
-                collectionHint={stardustCollectionHint}
               />
               {typeof Notification !== "undefined" ? (
                 <button
@@ -1331,6 +1328,13 @@ export function PetCard() {
         memoryKeys={playerMeta.memoryKeys}
         stardust={playerMeta.stardust}
         careStyleNote={careStylePill}
+      />
+
+      <StardustGuideModal
+        open={stardustInfoOpen}
+        onClose={() => setStardustInfoOpen(false)}
+        petName={pet.name}
+        stage={pet.stage}
       />
 
       <Boutique

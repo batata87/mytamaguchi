@@ -1,43 +1,21 @@
 "use client";
 
 import { forwardRef, useEffect, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 
-function FourPointStar({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id="stardustStarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#fef3c7" />
-          <stop offset="45%" stopColor="#fde68a" />
-          <stop offset="100%" stopColor="#c4b5fd" />
-        </linearGradient>
-      </defs>
-      <motion.path
-        fill="url(#stardustStarGrad)"
-        d="M12 2l1.8 5.5h5.8l-4.7 3.4 1.8 5.5L12 14.6 6.3 16.4l1.8-5.5L3.4 7.5h5.8L12 2z"
-        animate={{ scale: [1, 1.12, 1], opacity: [0.88, 1, 0.88] }}
-        transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </svg>
-  );
-}
-
 type StardustCounterProps = {
   amount: number;
+  /** Opens the boutique (only the + control). */
   onOpenShop: () => void;
+  /** Opens the stardust guide (icon + count tap). */
+  onOpenInfo: () => void;
   pulseNonce?: number;
-  /** Long-press / hover hint (native title) for how stardust is earned */
-  collectionHint?: string;
 };
 
 export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(function StardustCounter(
-  { amount, onOpenShop, pulseNonce = 0, collectionHint },
+  { amount, onOpenShop, onOpenInfo, pulseNonce = 0 },
   ref
 ) {
   const [bump, setBump] = useState(0);
@@ -50,23 +28,42 @@ export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(
   return (
     <div
       ref={ref}
-      title={collectionHint}
-      className="flex items-center gap-1 rounded-full border border-white/50 bg-white/45 px-2 py-1 shadow-[0_6px_20px_rgba(139,92,246,0.18)] backdrop-blur-md"
+      className="flex items-center gap-0.5 rounded-full border border-white/50 bg-white/45 py-0.5 pl-1 pr-0.5 shadow-[0_6px_20px_rgba(139,92,246,0.18)] backdrop-blur-md"
     >
-      <FourPointStar className="h-5 w-5 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.7)]" />
-      <motion.span
-        key={bump}
-        className="min-w-[1.5rem] text-center text-xs font-bold tabular-nums text-amber-950/95"
-        initial={{ scale: 1.2 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 420, damping: 18 }}
+      <button
+        type="button"
+        onClick={onOpenInfo}
+        className="app-tap-target flex min-w-0 items-center gap-1 rounded-l-full py-1 pl-0.5 pr-1 transition hover:bg-white/35 enabled:active:scale-[0.98]"
+        aria-label="How to collect stardust"
       >
-        {amount}
-      </motion.span>
+        <motion.span
+          className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-indigo-100/50 to-cyan-100/40 ring-1 ring-white/50"
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Image
+            src="/assets/stardust-icon.png"
+            alt=""
+            width={128}
+            height={128}
+            className="h-[26px] w-[26px] object-cover object-center"
+            unoptimized
+          />
+        </motion.span>
+        <motion.span
+          key={bump}
+          className="min-w-[1.25rem] text-center text-xs font-bold tabular-nums text-amber-950/95"
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 420, damping: 18 }}
+        >
+          {amount}
+        </motion.span>
+      </button>
       <button
         type="button"
         onClick={onOpenShop}
-        className="app-tap-target flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/25 text-violet-900 transition hover:bg-violet-500/35 enabled:active:scale-95"
+        className="app-tap-target flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/25 text-violet-900 transition hover:bg-violet-500/35 enabled:active:scale-95"
         aria-label="Open Star-Merchant boutique"
         title="Open boutique"
       >
