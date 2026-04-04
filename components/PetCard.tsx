@@ -13,6 +13,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { MemoryBook } from "@/components/MemoryBook";
 import { Boutique } from "@/components/Boutique";
 import { StardustCounter } from "@/components/StardustCounter";
+import { StardustGlyph } from "@/components/StardustGlyph";
 import { DAILY_LOGIN_STARDUST, HATCH_STARDUST_BONUS, StardustGuideModal } from "@/components/StardustGuideModal";
 import { SceneBackground } from "@/components/SceneBackground";
 import { getStardustWeather } from "@/lib/stardustWeather";
@@ -935,13 +936,13 @@ export function PetCard() {
   /** When Zen/stats is open, push the stage well below the tall header so it never sits under the card. */
   const creatureStageContainerClass = statsPanelOpen
     ? pet.stage === "egg"
-      ? "top-[clamp(20rem,58dvh,36rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(18rem,50dvh,32rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
-      : "top-[clamp(21rem,60dvh,38rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(19rem,52dvh,34rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+      ? "top-[clamp(22rem,62dvh,38rem)] bottom-[clamp(11.5rem,36vh,19rem)] sm:top-[clamp(18rem,50dvh,32rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+      : "top-[clamp(23rem,64dvh,40rem)] bottom-[clamp(11.5rem,36vh,19rem)] sm:top-[clamp(19rem,52dvh,34rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
     : pet.stage === "egg"
-      ? "top-[clamp(11.5rem,28vh,17rem)] bottom-[clamp(9.5rem,32vh,17rem)] sm:top-[clamp(10rem,26vh,16rem)] sm:bottom-[clamp(8.5rem,30vh,16rem)]"
+      ? "top-[clamp(12.5rem,32vh,19rem)] bottom-[clamp(11rem,34vh,18rem)] sm:top-[clamp(10.5rem,28vh,17rem)] sm:bottom-[clamp(8.5rem,30vh,16rem)]"
       : poopIds.length > 0
-        ? "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(11.5rem,36vh,19rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(10rem,32vh,17rem)]"
-        : "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(9rem,30vh,16rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(8rem,28vh,15rem)]";
+        ? "top-[clamp(13rem,34vh,21rem)] bottom-[clamp(12.5rem,40vh,22rem)] sm:top-[clamp(10.5rem,28vh,18rem)] sm:bottom-[clamp(10rem,32vh,17rem)]"
+        : "top-[clamp(13rem,34vh,21rem)] bottom-[clamp(12rem,38vh,21rem)] sm:top-[clamp(10.5rem,26vh,17rem)] sm:bottom-[clamp(8.5rem,30vh,16rem)]";
   const creatureSizeClass =
     "relative flex max-h-full w-full max-w-[min(100vw-1.5rem,340px)] flex-shrink-0 items-center justify-center overflow-visible px-2 py-6 sm:px-4 sm:py-10";
 
@@ -1077,7 +1078,7 @@ export function PetCard() {
             <motion.button
               key={m.id}
               type="button"
-              className="app-tap-target pointer-events-auto fixed z-[56] flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/50 bg-amber-50/95 text-lg shadow-md"
+              className="app-tap-target pointer-events-auto fixed z-[56] flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/50 bg-amber-50/95 shadow-md"
               style={{ left: m.x, top: m.y }}
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: viewport.height * 0.42 }}
@@ -1088,7 +1089,7 @@ export function PetCard() {
                 setMeteorDrops((d) => d.filter((x) => x.id !== m.id));
               }}
             >
-              ✦
+              <StardustGlyph size="sm" />
             </motion.button>
           ))
         : null}
@@ -1097,24 +1098,24 @@ export function PetCard() {
         <header className="pointer-events-none fixed inset-x-0 top-0 z-30 mx-auto w-full max-w-[min(100%,480px)] px-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-3 sm:pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="pointer-events-auto rounded-3xl border border-white/45 bg-white/40 px-2.5 py-2.5 shadow-[0_10px_30px_rgba(122,111,174,0.12)] backdrop-blur-md sm:px-3 sm:py-3.5">
           <div className="mb-1 grid grid-cols-[auto_1fr_auto] items-center gap-1.5">
-            <div className="flex shrink-0 items-center gap-0.5">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => setMemoryBookOpen(true)}
-                className="app-tap-target flex h-8 w-8 items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35 enabled:active:scale-[0.96]"
+                className="app-tap-target flex h-11 w-11 items-center justify-center rounded-full text-rose-700/85 transition hover:bg-white/35 enabled:active:scale-[0.96] sm:h-10 sm:w-10"
                 title="Memory Book — stickers & memories"
                 aria-label="Open memory book"
               >
-                <BookHeart className="h-4 w-4 shrink-0" strokeWidth={2} />
+                <BookHeart className="h-6 w-6 shrink-0 sm:h-5 sm:w-5" strokeWidth={2.35} />
               </button>
               <button
                 type="button"
                 onClick={() => setBoutiqueOpen(true)}
-                className="app-tap-target flex h-8 w-8 items-center justify-center rounded-full text-violet-800/95 transition hover:bg-violet-200/35 enabled:active:scale-[0.96]"
+                className="app-tap-target flex h-11 w-11 items-center justify-center rounded-full text-violet-800/95 transition hover:bg-violet-200/35 enabled:active:scale-[0.96] sm:h-10 sm:w-10"
                 title="Cosmic Boutique — spend stardust"
                 aria-label="Open boutique"
               >
-                <ShoppingBag className="h-4 w-4" strokeWidth={2} />
+                <ShoppingBag className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.35} />
               </button>
             </div>
             <div className="flex min-w-0 justify-center">
@@ -1370,14 +1371,14 @@ export function PetCard() {
         {stardustFlights.map((f) => (
           <motion.div
             key={f.id}
-            className="pointer-events-none fixed z-[60] text-lg font-bold text-amber-200 drop-shadow-[0_0_10px_rgba(251,191,36,0.95)]"
+            className="pointer-events-none fixed z-[60] flex items-center justify-center drop-shadow-[0_0_8px_rgba(251,191,36,0.85)]"
             initial={{ opacity: 1, scale: 1, left: f.x0, top: f.y0 }}
-            animate={{ opacity: 0.12, scale: 0.4, left: f.x1, top: f.y1 }}
+            animate={{ opacity: 0.2, scale: 0.35, left: f.x1, top: f.y1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.85, ease: "easeOut" }}
             style={{ position: "fixed", transform: "translate(-50%, -50%)" }}
           >
-            ✦
+            <StardustGlyph size="xs" />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -1390,7 +1391,7 @@ export function PetCard() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 6 }}
             transition={{ duration: 0.35, ease: "easeOut" }}
-            className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+11rem)] z-[50] mx-auto max-w-[min(100%,420px)] px-4 text-center sm:bottom-[calc(env(safe-area-inset-bottom)+11.5rem)]"
+            className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+14rem)] z-[50] mx-auto max-w-[min(100%,420px)] px-4 text-center sm:bottom-[calc(env(safe-area-inset-bottom)+11.5rem)]"
           >
             <div className="rounded-2xl border border-white/45 bg-white/92 px-3 py-2.5 text-left shadow-lg backdrop-blur-md">
               <p className="text-[11px] font-semibold leading-snug text-slate-900">{dailyToast.title}</p>
@@ -1434,6 +1435,7 @@ export function PetCard() {
           const r = buyWithStardust(item);
           if (r.ok) {
             setStardustPulseNonce((n) => n + 1);
+            setPreviewItem(null);
           }
           return r;
         }}
@@ -1441,8 +1443,8 @@ export function PetCard() {
         onOpenCosmicEgg={openCosmicEgg}
       />
 
-      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+6.2rem)] sm:px-3 sm:pb-3">
-        <div className="pointer-events-auto text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
+      <footer className="pointer-events-none fixed inset-x-0 bottom-0 z-[14] mx-auto w-full max-w-[min(100%,480px)] px-2.5 pb-[calc(env(safe-area-inset-bottom)+11.5rem)] sm:px-3 sm:pb-[calc(env(safe-area-inset-bottom)+3.5rem)]">
+        <div className="pointer-events-auto px-1 text-center text-[10px] font-medium leading-snug text-slate-800/90 drop-shadow-[0_1px_6px_rgba(255,255,255,0.75)]">
           {pet.stage === "egg"
             ? eggIsReadyByTime
               ? "Egg is warm enough. Keep caring to trigger hatch."

@@ -38,6 +38,13 @@ export function useStore(
         stardust: meta.stardust - item.priceStardust,
         ownedItemIds: [...meta.ownedItemIds, item.id]
       };
+      if (item.category === "hat") {
+        next.equippedHatId = item.id;
+      } else if (item.category === "skin") {
+        next.equippedSkinId = item.id;
+      } else if (item.category === "room") {
+        next.equippedRoomId = item.id;
+      }
       persist(next);
       return { ok: true };
     },

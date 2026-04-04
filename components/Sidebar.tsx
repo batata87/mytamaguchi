@@ -291,14 +291,14 @@ export function Sidebar({
       )}
 
       <div
-        className={`flex w-full flex-col gap-2 overflow-x-visible overflow-y-visible rounded-2xl border p-2 shadow-sm backdrop-blur-sm sm:gap-2 sm:overflow-visible ${
+        className={`flex w-full flex-col gap-2 overflow-x-visible overflow-y-visible rounded-2xl border px-2 pb-2 pt-2.5 shadow-sm backdrop-blur-sm sm:gap-2 sm:overflow-visible sm:px-2.5 sm:pb-2.5 sm:pt-3 ${
           isEgg
             ? "border-dashed border-slate-400/50 bg-slate-900/[0.07] shadow-none ring-1 ring-slate-500/15"
             : "border-white/20 bg-white/10"
         }`}
       >
         <p
-          className={`w-full shrink-0 text-center text-[9px] font-bold uppercase leading-none tracking-wide ${
+          className={`w-full shrink-0 pt-0.5 text-center text-[9px] font-bold uppercase leading-tight tracking-wide ${
             isEgg ? "text-slate-600" : "text-slate-800"
           }`}
         >

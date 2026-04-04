@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
+import { StardustGlyph } from "@/components/StardustGlyph";
 import type { PetStage } from "@/lib/game";
 
 type StardustGuideModalProps = {
@@ -50,8 +51,8 @@ export function StardustGuideModal({ open, onClose, petName, stage }: StardustGu
               <X className="h-5 w-5" strokeWidth={2} />
             </button>
             <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200/60 bg-white/50 shadow-inner">
-                <Sparkles className="h-5 w-5 text-violet-600" strokeWidth={2} />
+              <div className="flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-2xl border border-violet-200/60 bg-white/50 shadow-inner">
+                <StardustGlyph size="lg" />
               </div>
               <h2 id="stardust-guide-title" className="pr-8 text-lg font-bold tracking-tight text-indigo-950">
                 How you get stardust

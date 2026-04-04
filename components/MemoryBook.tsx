@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { BookHeart, X } from "lucide-react";
+import { StardustGlyph } from "@/components/StardustGlyph";
 
 type MemoryBookProps = {
   open: boolean;
@@ -56,11 +57,18 @@ export function MemoryBook({ open, onClose, memoryKeys, stardust, careStyleNote 
             <p className="mb-2 text-xs text-white/65">
               Stickers unlock when you try a new care combo or room.
             </p>
-            <p className="mb-2 text-xs text-white/65">
+            <p className="mb-2 text-xs leading-relaxed text-white/65">
+              <span className="mr-1 inline-flex translate-y-0.5 align-middle">
+                <StardustGlyph size="sm" variant="light" />
+              </span>
               <span className="font-semibold text-amber-200">Stardust</span> adds up from your first visit each day, from{" "}
               <span className="font-medium text-white/85">pressing and holding</span> your companion (after hatch), and from{" "}
-              <span className="font-medium text-white/85">tapping glowing ✦</span> when they appear. Total here:{" "}
-              <span className="font-semibold text-amber-200">{stardust}</span>. Spend it in the shop — tap the bag in the top bar.
+              <span className="font-medium text-white/85">tapping glowing sparkles</span> when they appear. Total:{" "}
+              <span className="inline-flex items-center gap-1 align-middle font-semibold text-amber-200">
+                <StardustGlyph size="xs" variant="light" />
+                <span className="tabular-nums">{stardust}</span>
+              </span>
+              . Spend it in the shop — tap the bag in the top bar.
             </p>
             {careStyleNote ? (
               <p className="mb-3 text-[11px] text-white/55">

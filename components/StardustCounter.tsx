@@ -1,8 +1,8 @@
 "use client";
 
 import { forwardRef, useEffect, useState } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
+import { StardustGlyph } from "@/components/StardustGlyph";
 
 type StardustCounterProps = {
   amount: number;
@@ -33,20 +33,7 @@ export const StardustCounter = forwardRef<HTMLDivElement, StardustCounterProps>(
         className="app-tap-target flex min-w-0 items-center gap-1 rounded-full py-1 pl-0.5 pr-0.5 transition hover:bg-white/35 enabled:active:scale-[0.98]"
         aria-label="How to collect stardust"
       >
-        <motion.span
-          className="relative flex h-[22px] w-[22px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-indigo-100/50 to-cyan-100/40 ring-1 ring-white/50"
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Image
-            src="/assets/stardust-icon.png"
-            alt=""
-            width={128}
-            height={128}
-            className="h-[26px] w-[26px] object-cover object-center"
-            unoptimized
-          />
-        </motion.span>
+        <StardustGlyph size="md" animate />
         <motion.span
           key={bump}
           className="min-w-[1.25rem] text-center text-xs font-bold tabular-nums text-amber-950/95"

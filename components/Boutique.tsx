@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles, X } from "lucide-react";
+import { StardustBalancePill, StardustGlyph } from "@/components/StardustGlyph";
 import type { StoreItem } from "@/lib/storeTypes";
 import type { BuyStardustResult } from "@/hooks/useStore";
 import { HUE_PRESET_CSS } from "@/lib/storeCatalog";
@@ -44,10 +45,8 @@ function PriceRow({ item }: { item: StoreItem }) {
     );
   }
   return (
-    <span className="flex items-center gap-1 text-xs font-bold text-amber-900/90">
-      <span className="text-sm" aria-hidden>
-        ✦
-      </span>
+    <span className="flex items-center gap-1.5 text-xs font-bold text-amber-900/90">
+      <StardustGlyph size="sm" />
       <span className="tabular-nums">{item.priceStardust}</span>
     </span>
   );
@@ -108,9 +107,10 @@ export function Boutique({
               </button>
             </div>
 
-            <div className="flex items-center justify-between px-4 py-2 text-[11px] text-slate-600">
-              <span>
-                Your stardust: <span className="font-bold tabular-nums text-amber-900">{stardust}</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-[11px] text-slate-600">
+              <span className="flex items-center gap-2">
+                <span className="font-semibold text-slate-700">Your stardust</span>
+                <StardustBalancePill amount={stardust} />
               </span>
               {previewItemId ? (
                 <button
