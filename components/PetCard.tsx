@@ -932,13 +932,16 @@ export function PetCard() {
 
   const showFlash = screenFlashTone !== null || hatchPhase === "flash";
   /** Reserve space under header / above activities so squash/stretch never clips the sprite. */
+  /** When Zen/stats is open, push the stage well below the tall header so it never sits under the card. */
   const creatureStageContainerClass = statsPanelOpen
     ? pet.stage === "egg"
-      ? "top-[clamp(13.5rem,34vh,20rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(12rem,30vh,18rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
-      : "top-[clamp(14rem,36vh,21rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(12.5rem,32vh,19rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+      ? "top-[clamp(20rem,58dvh,36rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(18rem,50dvh,32rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
+      : "top-[clamp(21rem,60dvh,38rem)] bottom-[clamp(10rem,32vh,17rem)] sm:top-[clamp(19rem,52dvh,34rem)] sm:bottom-[clamp(9rem,28vh,16rem)]"
     : pet.stage === "egg"
       ? "top-[clamp(11.5rem,28vh,17rem)] bottom-[clamp(9.5rem,32vh,17rem)] sm:top-[clamp(10rem,26vh,16rem)] sm:bottom-[clamp(8.5rem,30vh,16rem)]"
-      : "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(9rem,30vh,16rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(8rem,28vh,15rem)]";
+      : poopIds.length > 0
+        ? "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(11.5rem,36vh,19rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(10rem,32vh,17rem)]"
+        : "top-[clamp(11rem,26vh,18rem)] bottom-[clamp(9rem,30vh,16rem)] sm:top-[clamp(9.5rem,24vh,17rem)] sm:bottom-[clamp(8rem,28vh,15rem)]";
   const creatureSizeClass =
     "relative flex max-h-full w-full max-w-[min(100vw-1.5rem,340px)] flex-shrink-0 items-center justify-center overflow-visible px-2 py-6 sm:px-4 sm:py-10";
 

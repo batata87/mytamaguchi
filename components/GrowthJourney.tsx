@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 import type { PetStage } from "@/lib/game";
@@ -96,23 +95,13 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                     ease: "easeInOut"
                   }}
                 >
-                  {step.id === "teen" && state === "upcoming" && (
-                    <Image
-                      src="/assets/stage4_medium.png"
-                      alt=""
-                      width={64}
-                      height={64}
-                      unoptimized
-                      className="absolute inset-0 h-full w-full object-cover opacity-[0.22]"
-                    />
-                  )}
                   <Star
                     className={`relative z-[1] ${
                       isDone
                         ? "fill-emerald-500 text-emerald-600"
                         : isCurrent
                           ? "fill-violet-400 text-violet-600"
-                          : "fill-transparent text-slate-400"
+                          : "fill-transparent text-slate-500"
                     }`}
                     size={isCurrent ? 22 : 16}
                     strokeWidth={1.8}
@@ -120,7 +109,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
                 </motion.div>
                 <span
                   className={`text-[8px] font-semibold uppercase tracking-[0.12em] ${
-                    isCurrent ? "text-slate-900" : isDone ? "text-slate-700" : "text-slate-500"
+                    isCurrent ? "text-slate-950" : isDone ? "text-slate-800" : "text-slate-600"
                   }`}
                 >
                   {step.label}
@@ -146,7 +135,7 @@ export function GrowthJourney({ stage, bond }: GrowthJourneyProps) {
         </div>
         <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-slate-200/90 bg-slate-100/95 px-2.5 py-1 shadow-sm">
           <Star className="fill-amber-400 text-amber-600" size={14} strokeWidth={1.8} />
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-600">Bia XP</span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-800">Bia XP</span>
           <motion.span
             key={bond}
             initial={{ opacity: 0.7, scale: 0.96 }}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { animate, AnimatePresence, motion, useMotionValue, useSpring, type Variants } from "framer-motion";
 import { BrushCleaning, Cherry, CloudMoon, Sparkles } from "lucide-react";
@@ -436,6 +437,41 @@ export function CreatureStage({
     return () => ro.disconnect();
   }, [stage, isSick]);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const [poopLayout, setPoopLayout] = useState<{ cx: number; bottom: number } | null>(null);
+  const poopIdsKey = poopIds.join("|");
+  useLayoutEffect(() => {
+    if (poopIds.length === 0) {
+      setPoopLayout(null);
+      return;
+    }
+    const update = () => {
+      const el = creatureRootRef.current;
+      if (!el) {
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      setPoopLayout({ cx: r.left + r.width * 0.5, bottom: r.bottom });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    const el = creatureRootRef.current;
+    if (el) {
+      ro.observe(el);
+    }
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [poopIds.length, poopIdsKey, faceLayout, petJumpKey, reunionPlayKey, peekSessionKey, shyCorner]);
+
   const enableHoldStardust = Boolean(onHoldStardustReward && stage !== "egg");
 
   const handleHoldPointerDown = () => {
@@ -583,6 +619,7 @@ export function CreatureStage({
   };
 
   return (
+    <>
     <div className="relative flex h-auto min-h-0 w-full max-w-[min(100%,340px)] items-center justify-center overflow-visible px-2 py-1 sm:px-4 sm:py-2">
       {stage !== "egg" && !isSick && (
         <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pt-1 pr-1 sm:pr-4">
@@ -706,32 +743,6 @@ export function CreatureStage({
                   🧘
                 </div>
               )}
-              {poopIds.length > 0 ? (
-                <div className="pointer-events-none absolute -bottom-[6%] left-1/2 z-[15] flex max-w-[min(100%,200px)] -translate-x-1/2 items-end justify-center gap-0.5 sm:-bottom-[4%]">
-                  <AnimatePresence>
-                    {poopIds.map((id) => (
-                      <motion.div
-                        key={id}
-                        initial={{ opacity: 0, scale: 0.45, y: 14 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.75, y: 8 }}
-                        transition={{ type: "spring", stiffness: 420, damping: 24 }}
-                        className="w-[40px] shrink-0 sm:w-[48px]"
-                        aria-hidden
-                      >
-                        <Image
-                          src="/assets/poop.png"
-                          alt=""
-                          width={72}
-                          height={72}
-                          className="h-auto w-full object-contain drop-shadow-[0_4px_10px_rgba(15,23,42,0.35)]"
-                          unoptimized
-                        />
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
-              ) : null}
               <motion.div
                 key={feedSquashNonce}
                 className="relative inline-block"
@@ -792,5 +803,42 @@ export function CreatureStage({
         </motion.div>
       </motion.div>
     </div>
+    {mounted && poopIds.length > 0 && poopLayout
+      ? createPortal(
+          <div
+            className="pointer-events-none fixed z-[55] flex max-w-[min(100%,220px)] items-end justify-center gap-0.5"
+            style={{
+              left: poopLayout.cx,
+              top: poopLayout.bottom,
+              transform: "translate(-50%, -90%)"
+            }}
+          >
+            <AnimatePresence>
+              {poopIds.map((id) => (
+                <motion.div
+                  key={id}
+                  initial={{ opacity: 0, scale: 0.45, y: 14 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.75, y: 8 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                  className="w-[40px] shrink-0 sm:w-[48px]"
+                  aria-hidden
+                >
+                  <Image
+                    src="/assets/poop.png"
+                    alt=""
+                    width={72}
+                    height={72}
+                    className="h-auto w-full object-contain drop-shadow-[0_4px_10px_rgba(15,23,42,0.45)]"
+                    unoptimized
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>,
+          document.body
+        )
+      : null}
+    </>
   );
 }

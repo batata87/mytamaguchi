@@ -291,45 +291,47 @@ export function Sidebar({
       )}
 
       <div
-        className={`flex flex-row items-end justify-center gap-2 overflow-x-visible overflow-y-visible rounded-2xl border p-2 shadow-sm backdrop-blur-sm sm:flex-col sm:overflow-visible ${
+        className={`flex w-full flex-col gap-2 overflow-x-visible overflow-y-visible rounded-2xl border p-2 shadow-sm backdrop-blur-sm sm:gap-2 sm:overflow-visible ${
           isEgg
             ? "border-dashed border-slate-400/50 bg-slate-900/[0.07] shadow-none ring-1 ring-slate-500/15"
             : "border-white/20 bg-white/10"
         }`}
       >
         <p
-          className={`px-0.5 text-center text-[9px] font-bold uppercase tracking-wide ${
-            isEgg ? "text-slate-500" : "text-slate-700"
+          className={`w-full shrink-0 text-center text-[9px] font-bold uppercase leading-none tracking-wide ${
+            isEgg ? "text-slate-600" : "text-slate-800"
           }`}
         >
           {isEgg ? "After hatch (locked)" : "Activities"}
         </p>
-        {careActions.map((item) => (
-          <ActivityWithSubmenu
-            key={item.action}
-            action={item.action}
-            label={item.label}
-            icon={item.icon}
-            muted={isEgg}
-            isSick={isSick}
-            lockedActions={lockedActions}
-            activeAction={activeAction}
-            onDragPoint={onDragPoint}
-            onSubDrop={onSubDrop}
-            onToggleAction={onToggleAction}
-            onCloseMenu={onCloseMenu}
-          />
-        ))}
-        {!isEgg && (
-          <DraggablePetTool
-            label="Pet"
-            icon={<span className="text-[22px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.18)]">💕</span>}
-            variant="default"
-            onDragPoint={onDragPoint}
-            onDropPet={onDropPet}
-            onPetDragChange={onPetDragChange}
-          />
-        )}
+        <div className="flex flex-row flex-wrap items-center justify-center gap-2 sm:flex sm:flex-col sm:items-stretch sm:justify-start">
+          {careActions.map((item) => (
+            <ActivityWithSubmenu
+              key={item.action}
+              action={item.action}
+              label={item.label}
+              icon={item.icon}
+              muted={isEgg}
+              isSick={isSick}
+              lockedActions={lockedActions}
+              activeAction={activeAction}
+              onDragPoint={onDragPoint}
+              onSubDrop={onSubDrop}
+              onToggleAction={onToggleAction}
+              onCloseMenu={onCloseMenu}
+            />
+          ))}
+          {!isEgg && (
+            <DraggablePetTool
+              label="Pet"
+              icon={<span className="text-[22px] leading-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.18)]">💕</span>}
+              variant="default"
+              onDragPoint={onDragPoint}
+              onDropPet={onDropPet}
+              onPetDragChange={onPetDragChange}
+            />
+          )}
+        </div>
       </div>
       </div>
     </aside>
